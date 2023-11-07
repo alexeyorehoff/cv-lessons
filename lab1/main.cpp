@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
@@ -5,15 +7,17 @@
 #include "sprite.h"
 #include "app.h"
 
-static long int x_position = 0;
+static int x_position = 0;
 
 class SimpleSpriteApp : public App<int> {
 public:
     int reverse_dir = 1;
 
-    SimpleSpriteApp(int width, int height, const char *background_path, const char *title, const Sprite<int>& robot)
-    : App<int>(width, height, background_path, title) {
-        sprites.push_back(robot);
+    SimpleSpriteApp(int width, int height, const char *background_path, const char *title)
+    : App<int>(width, height, background_path, title) {}
+
+    void add_sprite(const Sprite<int>& sprite) {
+        sprites.push_back(sprite);
     }
 
     cv::Mat render() {
@@ -22,21 +26,32 @@ public:
             reverse_dir *= -1;
         }
 
+
         for (Sprite<int> &sprite: sprites) {
             sprite.animate(x_position);
-//            cv::circle(background_img, cv::Point(sprite.x_center, sprite.y_center), 1,
-//                       cv::Scalar(0, 0, 255), 1);
+            cv::circle(background_img, cv::Point(sprite.x_center, sprite.y_center), 1,
+                       cv::Scalar(0, 0, 255), 1);
         }
-        return App::render();
+        auto image = App::render();
+
+        if (x_position == background_img.cols / 2) {
+            cv::imwrite("test.jpg", image);
+        }
+        return image;
     }
 };
 
 
 int main() {
-    Sprite<int> robot("robot", "../lab1/robot.png");
-    robot.set_animation([](int time){return std::pair<int, int>(time, int(500 + 250 * sin((float)time / 100)));});
+    SimpleSpriteApp app(640, 480, "../lab1/background.jpg", "test_project");
 
-    SimpleSpriteApp app(1000, 1000, "../lab1/background.jpg", "test_project", robot);
+    Sprite<int> robot1("robot1", "../lab1/robot.png");
+    Sprite<int> robot2("robot2", "../lab1/robot.png");
+    robot1.set_animation([](int time){return std::pair<int, int>(time, int(240 + 250 * sin((float)time / 100)));});
+    robot2.set_animation([](int time){return std::pair<int, int>(time, int(200 + 150 * cos((float)time / 100)));});
+
+    app.add_sprite(robot1);
+    app.add_sprite(robot2);
 
     cv::imshow(app.title, app.render());
     cv::waitKey(0);

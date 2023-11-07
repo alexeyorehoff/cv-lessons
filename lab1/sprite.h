@@ -32,8 +32,8 @@ public:
 template<typename ... Args>
 Sprite<Args...>::Sprite(const char *name, const char *texture_path)
 : name(name), x_center(0), y_center(0) {
-    texture = cv::imread(texture_path, cv::IMREAD_UNCHANGED);
-    cv::extractChannel(this->texture, alpha_mask, 3);
+    texture = cv::imread(texture_path);
+    cv::extractChannel(cv::imread(texture_path, cv::IMREAD_UNCHANGED), alpha_mask, 3);
 }
 
 template<typename ... Args>
@@ -43,18 +43,11 @@ void Sprite<Args...>::set_animation(std::function<std::pair<int, int>(Args...)> 
 
 template<typename ... Args>
 void Sprite<Args...>::draw_on(cv::Mat background) {
-    cv::Rect roi_rect(x_pos, y_pos, texture.cols, texture.rows);
-    roi_rect &= cv::Rect(0, 0, background.cols, background.rows);
-    cv::Mat roi_region = background(roi_rect);
-    cv::rectangle(roi_region, cv::Point(0, 0),
-                              cv::Point(roi_region.cols - 1, roi_region.rows - 1),
-                              cv::Scalar(0, 0, 255));
-    auto texture_roi = cv::Rect(cv::Point(std::max(0, -x_pos), std::max(0, -y_pos)),
-                                cv::Point(std::min(texture.cols, background.cols - x_pos),
-                                              std::min(texture.rows, background.rows - y_pos)));
-
-    cv::imshow("texture", texture(texture_roi));
-
+    cv::Rect bg_roi(x_pos, y_pos, texture.cols, texture.rows);
+    bg_roi &= cv::Rect(0, 0, background.cols, background.rows);
+    cv::Rect texture_roi = cv::Rect(std::max(0, -x_pos), std::max(0, -y_pos), bg_roi.width, bg_roi.height);
+    cv::copyTo(texture(texture_roi), background(bg_roi), alpha_mask(texture_roi));
+    //cv::imshow("texture", texture(texture_roi));
 }
 
 template<typename ... Args>
