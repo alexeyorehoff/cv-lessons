@@ -19,6 +19,8 @@ public:
 
     App(int width, int height, const char *background_path, const char *title);
 
+    void add_sprite(Sprite<Args...> sprite);
+
     cv::Mat render();
 };
 
@@ -30,6 +32,11 @@ App<Args...>::App(int width, int height, const char *background_path, const char
 
     Mat bg_img = cv::imread(background_path);
     cv::resize(bg_img, background_img, canvas_size);
+}
+
+template<typename ... Args>
+void App<Args...>::add_sprite(Sprite<Args...> sprite) {
+    sprites.push_back(sprite);
 }
 
 template<typename ... Args>

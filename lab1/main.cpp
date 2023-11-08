@@ -16,10 +16,6 @@ public:
     SimpleSpriteApp(int width, int height, const char *background_path, const char *title)
     : App<int>(width, height, background_path, title) {}
 
-    void add_sprite(const Sprite<int>& sprite) {
-        sprites.push_back(sprite);
-    }
-
     cv::Mat render() {
         x_position += reverse_dir;
         if ((reverse_dir > 0 && x_position > background_img.cols) || (reverse_dir < 0 && x_position < 1)) {
