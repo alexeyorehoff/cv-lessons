@@ -9,12 +9,12 @@
 
 static int x_position = 0;
 
-class SimpleSpriteApp : public App<int> {
+class SimpleSpriteApp : public App<Sprite<int>> {
 public:
     int reverse_dir = 1;
 
     SimpleSpriteApp(int width, int height, const char *background_path, const char *title)
-    : App<int>(width, height, background_path, title) {}
+    : App<Sprite<int>>(width, height, background_path, title) {}
 
     cv::Mat render() {
         x_position += reverse_dir;
@@ -48,9 +48,6 @@ int main() {
 
     app.add_sprite(robot1);
     app.add_sprite(robot2);
-
-    cv::imshow(app.title, app.render());
-    cv::waitKey(0);
 
     while (true) {
         cv::imshow(app.title, app.render());

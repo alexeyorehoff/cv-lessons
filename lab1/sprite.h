@@ -9,7 +9,7 @@
 
 template<class ... Args>
 class Sprite {
-private:
+protected:
     std::function<std::pair<int, int>(Args ...)> animation_func;
     cv::Mat texture;
     cv::Mat alpha_mask;
@@ -23,6 +23,8 @@ public:
     Sprite(const char *name, const char *texture_path);
 
     void set_animation(std::function<std::pair<int, int>(Args ...)> animation_func);
+
+    void set_position(int pos_x, int pos_y);
 
     void draw_on(cv::Mat background);
 
@@ -47,16 +49,20 @@ void Sprite<Args...>::draw_on(cv::Mat background) {
     bg_roi &= cv::Rect(0, 0, background.cols, background.rows);
     cv::Rect texture_roi = cv::Rect(std::max(0, -x_pos), std::max(0, -y_pos), bg_roi.width, bg_roi.height);
     cv::copyTo(texture(texture_roi), background(bg_roi), alpha_mask(texture_roi));
-    //cv::imshow("texture", texture(texture_roi));
+}
+
+template<typename ... Args>
+void Sprite<Args ...>::set_position(int pos_x, int pos_y) {
+    x_center = pos_x;
+    y_center = pos_y;
+    x_pos = x_center - texture.cols / 2;
+    y_pos = y_center - texture.rows / 2;
 }
 
 template<typename ... Args>
 void Sprite<Args...>::animate(Args... args) {
     auto pair = animation_func(args...);
-    x_center = pair.first;
-    y_center = pair.second;
-    x_pos = x_center - texture.cols / 2;
-    y_pos = y_center - texture.rows / 2;
+    this->set_position(pair.first, pair.second);
 }
 
 #endif //CV_LESSONS_SPRITE_H

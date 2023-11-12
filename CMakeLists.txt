@@ -1,6 +1,10 @@
-set(CURRENT_TARGET lab1)
+set(CURRENT_TARGET lab1_2)
 
+set(lab1_INCL lab1)
 set(lab1_DEPS lab1/sprite.h lab1/app.h)
+
+set(lab1_2_INCL lab1 lab1_2)
+set(lab1_2_DEPS lab1/sprite.h lab1/app.h)
 
 cmake_minimum_required(VERSION 3.24)
 project(cv_lessons)
@@ -13,9 +17,9 @@ find_package(OpenCV REQUIRED)
 
 include_directories(
         ${OpenCV_INCLUDE_DIRS}
-        ${CURRENT_TARGET}
+        ${${CURRENT_TARGET}_INCL}
 )
 
 
-add_executable(${CURRENT_TARGET} ${CURRENT_TARGET}/main.cpp ${${CURRENT_TARGET}_DEPS} lab1/app.h)
+add_executable(${CURRENT_TARGET} ${CURRENT_TARGET}/${CURRENT_TARGET}_main.cpp ${${CURRENT_TARGET}_DEPS})
 target_link_libraries(${CURRENT_TARGET} ${OpenCV_LIBS})
