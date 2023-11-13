@@ -16,15 +16,15 @@ protected:
     int x_pos, y_pos;
 
 public:
-    int x_center;
-    int y_center;
+    float x_center;
+    float y_center;
     const char *name;
 
     Sprite(const char *name, const char *texture_path);
 
     void set_animation(std::function<std::pair<int, int>(Args ...)> animation_func);
 
-    void set_position(int pos_x, int pos_y);
+    void set_position(float pos_x, float pos_y);
 
     void draw_on(cv::Mat background);
 
@@ -52,11 +52,11 @@ void Sprite<Args...>::draw_on(cv::Mat background) {
 }
 
 template<typename ... Args>
-void Sprite<Args ...>::set_position(int pos_x, int pos_y) {
+void Sprite<Args ...>::set_position(float pos_x, float pos_y) {
     x_center = pos_x;
     y_center = pos_y;
-    x_pos = x_center - texture.cols / 2;
-    y_pos = y_center - texture.rows / 2;
+    x_pos = (int)x_center - texture.cols / 2;
+    y_pos = (int)y_center - texture.rows / 2;
 }
 
 template<typename ... Args>
