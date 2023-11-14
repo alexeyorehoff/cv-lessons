@@ -5,7 +5,7 @@
 #include "sprite.h"
 
 
-const float G_CONST = 10;
+const float G_CONST = 5;
 
 class Body : public Sprite<double> {  // Класс тела в задаче N-тел. В уравнение для расчета позиции
                                                  // задаются компоненты скорости и промежуток времени dt
@@ -24,7 +24,7 @@ public:
     : App<Body>(width, height, background_path, title) {}
 
     cv::Mat render() {
-        float dt = 0.1;
+        float dt = 0.5;
         for (auto& body : sprites) {
             float ax = 0.0;
             float ay = 0.0;
@@ -52,16 +52,17 @@ public:
 
 int main() {
     // Body sun("sun", "../lab1_2/sun.png", 100, 500, 500, 0, 0);
-    Body planet1("planet1", "../lab1_2/sun.png", 2000, 500, 500, 0, 0);
-    Body planet2("planet2", "../lab1_2/planet.png", 30, 200, 500, 0, -5);
-    Body planet3("planet3", "../lab1_2/planet.png", 100, 800, 500, 0, 7);
+    Body planet1("planet1", "../lab1_2/planet.png", 5000, 100, 500, 0.5, 0);
+    Body planet2("planet2", "../lab1_2/planet.png", 3, 100, 700, 13, 0);
+    Body planet3("planet3", "../lab1_2/planet.png", 1, 100, 300, 10, 0);
+    Body planet4("planet4", "../lab1_2/planet.png", 2, 400, 500, 0, 4);
 
-
-    NBodyApp app(1000, 1000, "../lab1_2/background.jpg", "test");
+    NBodyApp app(1920, 1080, "../lab1_2/background.png", "test");
 
     app.add_sprite(planet1);
     app.add_sprite(planet2);
     app.add_sprite(planet3);
+    app.add_sprite(planet4);
 
     while (true) {
         cv::imshow(app.title, app.render());
