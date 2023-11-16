@@ -53,9 +53,9 @@ public:
 int main() {
     // Body sun("sun", "../lab1_2/sun.png", 100, 500, 500, 0, 0);
     Body planet1("planet1", "../lab1_2/planet.png", 5000, 100, 500, 0.5, 0);
-    Body planet2("planet2", "../lab1_2/planet.png", 3, 100, 700, 13, 0);
-    Body planet3("planet3", "../lab1_2/planet.png", 1, 100, 300, 10, 0);
-    Body planet4("planet4", "../lab1_2/planet.png", 2, 400, 500, 0, 4);
+    Body planet2("planet2", "../lab1_2/planet.png", 75, 100, 700, 12, 0);
+    Body planet3("planet3", "../lab1_2/planet.png", 50, 100, 300, 10, 0);
+    Body planet4("planet4", "../lab1_2/planet.png", 100, 400, 500, 0, 10);
 
     NBodyApp app(1920, 1080, "../lab1_2/background.png", "test");
 

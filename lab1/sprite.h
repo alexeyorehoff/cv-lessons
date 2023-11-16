@@ -34,8 +34,9 @@ public:
 template<typename ... Args>
 Sprite<Args...>::Sprite(const char *name, const char *texture_path)
 : name(name), x_center(0), y_center(0) {
-    texture = cv::imread(texture_path);
-    cv::extractChannel(cv::imread(texture_path, cv::IMREAD_UNCHANGED), alpha_mask, 3);
+    cv::Mat image = cv::imread(texture_path, cv::IMREAD_UNCHANGED);
+    cv::cvtColor(image, texture, cv::COLOR_BGRA2BGR);
+    cv::extractChannel(image, alpha_mask, 3);
 }
 
 template<typename ... Args>
