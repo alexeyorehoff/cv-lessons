@@ -43,8 +43,7 @@ template<typename T>
 cv::Mat App<T>::render() {
     cv::Mat image = this->background_img.clone();
     for (T sprite: this->sprites) {
-        if (sprite.x_center > 0 && sprite.x_center < canvas_size.width &&
-            sprite.y_center > 0 && sprite.y_center < canvas_size.height) {
+        if (sprite.fits_in(canvas_size)) {
             sprite.draw_on(image);
         }
     }

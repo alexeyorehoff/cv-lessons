@@ -24,6 +24,8 @@ public:
 
     void set_animation(std::function<std::pair<int, int>(Args ...)> animation_func);
 
+    bool fits_in(cv::Size canvas_size);
+
     void set_position(float pos_x, float pos_y);
 
     void draw_on(cv::Mat background);
@@ -42,6 +44,13 @@ Sprite<Args...>::Sprite(const char *name, const char *texture_path)
 template<typename ... Args>
 void Sprite<Args...>::set_animation(std::function<std::pair<int, int>(Args...)> func) {
     animation_func = func;
+}
+
+template<typename ... Args>
+bool Sprite<Args...>::fits_in(cv::Size canvas_size) {
+    auto intersect = cv::Rect(0, 0, canvas_size.width, canvas_size.height) &
+            cv::Rect(x_pos, y_pos, texture.cols, texture.rows);
+    return (bool)intersect.area();
 }
 
 template<typename ... Args>

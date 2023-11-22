@@ -11,15 +11,15 @@ static int x_position = 0;
 
 class SimpleSpriteApp : public App<Sprite<int>> {
 public:
-    int reverse_dir = 1;
+    int speed = 1;
 
     SimpleSpriteApp(int width, int height, const char *background_path, const char *title)
     : App<Sprite<int>>(width, height, background_path, title) {}
 
     cv::Mat render() {
-        x_position += reverse_dir;
-        if ((reverse_dir > 0 && x_position > background_img.cols) || (reverse_dir < 0 && x_position < 1)) {
-            reverse_dir *= -1;
+        x_position += speed;
+        if ((speed > 0 && x_position > background_img.cols) || (speed < 0 && x_position < 1)) {
+            speed *= -1;
         }
 
 
@@ -30,9 +30,6 @@ public:
         }
         auto image = App::render();
 
-        if (x_position == background_img.cols / 2) {
-            cv::imwrite("test.jpg", image);
-        }
         return image;
     }
 };
@@ -43,14 +40,20 @@ int main() {
 
     Sprite<int> robot1("robot1", "../lab1/robot.png");
     Sprite<int> robot2("robot2", "../lab1/robot.png");
-    robot1.set_animation([](int time){return std::pair<int, int>(time, int(240 + 250 * sin((float)time / 100)));});
+    robot1.set_animation([](int time){return std::pair<int, int>(time, int(240 + 350 * sin((float)time / 100)));});
     robot2.set_animation([](int time){return std::pair<int, int>(time, int(200 + 150 * cos((float)time / 100)));});
 
     app.add_sprite(robot1);
     app.add_sprite(robot2);
 
     while (true) {
-        cv::imshow(app.title, app.render());
+        auto image = app.render();
+        cv::imshow(app.title, image);
+
+        if (x_position == 320) {
+            cv::imwrite("test.jpg", image);
+        }
+
         int c = cv::waitKey(10);
         if (c == 27) {
             break;
