@@ -21,16 +21,14 @@ public:
 
     void add_sprite(T sprite);
 
-    cv::Mat render();
+    virtual cv::Mat render();
 };
 
 
 template<typename T>
 App<T>::App(int width, int height, const char *background_path, const char *title)
  : canvas_size(width, height), title(title) {
-    using cv::Mat;
-
-    Mat bg_img = cv::imread(background_path);
+    cv::Mat bg_img = cv::imread(background_path);
     cv::resize(bg_img, background_img, canvas_size);
 }
 

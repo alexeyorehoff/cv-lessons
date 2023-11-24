@@ -10,7 +10,7 @@
 template<class ... Args>
 class Sprite {
 protected:
-    std::function<std::pair<int, int>(Args ...)> animation_func;
+    std::function<cv::Point2i(Args ...)> animation_func;
     cv::Mat texture;
     cv::Mat alpha_mask;
     int x_pos, y_pos;
@@ -22,7 +22,7 @@ public:
 
     Sprite(const char *name, const char *texture_path);
 
-    void set_animation(std::function<std::pair<int, int>(Args ...)> animation_func);
+    void set_animation(std::function<cv::Point2i(Args ...)> animation_func);
 
     bool fits_in(cv::Size canvas_size);
 
@@ -42,7 +42,7 @@ Sprite<Args...>::Sprite(const char *name, const char *texture_path)
 }
 
 template<typename ... Args>
-void Sprite<Args...>::set_animation(std::function<std::pair<int, int>(Args...)> func) {
+void Sprite<Args...>::set_animation(std::function<cv::Point2i(Args...)> func) {
     animation_func = func;
 }
 
@@ -71,8 +71,8 @@ void Sprite<Args ...>::set_position(float pos_x, float pos_y) {
 
 template<typename ... Args>
 void Sprite<Args...>::animate(Args... args) {
-    auto pair = animation_func(args...);
-    this->set_position(pair.first, pair.second);
+    auto point = animation_func(args...);
+    this->set_position(point.x, point.y);
 }
 
 #endif //CV_LESSONS_SPRITE_H

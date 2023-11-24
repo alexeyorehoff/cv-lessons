@@ -7,8 +7,7 @@
 
 const float G_CONST = 5;
 
-class Body : public Sprite<double> {  // Класс тела в задаче N-тел. В уравнение для расчета позиции
-                                                 // задаются компоненты скорости и промежуток времени dt
+class Body : public Sprite<double> {
 public:
     float mass, vx, vy;
 
@@ -23,7 +22,7 @@ public:
     NBodyApp(int width, int height, const char *background_path, const char *title)
     : App<Body>(width, height, background_path, title) {}
 
-    cv::Mat render() {
+    cv::Mat render() override {
         float dt = 0.5;
         for (auto& body : sprites) {
             float ax = 0.0;

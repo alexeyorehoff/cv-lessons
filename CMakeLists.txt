@@ -1,4 +1,4 @@
-set(CURRENT_TARGET lab1)
+set(CURRENT_TARGET lab1_2)
 
 set(lab1_INCL lab1)
 set(lab1_DEPS lab1/sprite.h lab1/app.h)
