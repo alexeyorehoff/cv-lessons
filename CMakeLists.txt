@@ -1,4 +1,4 @@
-set(CURRENT_TARGET lab1_2)
+set(CURRENT_TARGET lab2)
 
 set(lab1_INCL lab1)
 set(lab1_DEPS lab1/sprite.h lab1/app.h)
@@ -13,6 +13,7 @@ cmake_minimum_required(VERSION 3.24)
 project(cv_lessons)
 
 set(CMAKE_CXX_STANDARD 20)
+set(OPENCV_LOG_LEVEL 0)
 
 set(OpenCV_DIR C:/libs/opencv/build-debug)
 find_package(OpenCV REQUIRED)
