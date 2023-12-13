@@ -65,12 +65,9 @@ int main() {
                        photo_callback);
     cv::createTrackbar("threshold", "video_detector", &threshold_level, 255);
     while (true) {
-
-        cap >> frame;
-
-        if (frame.empty()) {
-            cap.set(cv::CAP_PROP_POS_FRAMES, 1);
-            cap >> frame;
+        if (!cap.read(frame)) {
+            cap.set(cv::CAP_PROP_POS_FRAMES, 0);
+            continue;
         }
         cv::imshow("video_detector", detect(frame));
 
