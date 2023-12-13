@@ -2,11 +2,14 @@
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
+#include "opencv2/videoio.hpp"
 #include <vector>
+#include <iostream>
 
 
 static int threshold_level = 150;
 cv::Mat original;
+cv::VideoCapture cap;
 
 cv::Mat detect(cv::Mat img) {
     cv::Mat grayscale;
@@ -39,15 +42,41 @@ cv::Mat detect(cv::Mat img) {
     return contourImg;
 }
 
-static void slider_callback(int, void*) {
-    cv::imshow("detector", detect(original));
+static void photo_callback(int, void*) {
+    cv::imshow("photo_detector", detect(original));
 }
+
 
 int main() {
     original = cv::imread("../lab3/img/allababah/ig_0.jpg");
-    cv::namedWindow("detector");
-    cv::createTrackbar("threshold", "detector", &threshold_level, 255, slider_callback);
-    cv::imshow("detector", detect(original));
-    cv::waitKey();
+    cap = cv::VideoCapture("../lab3/img/allababah/v_1.mp4");
+
+    if(!cap.isOpened()){
+        std::cerr << "Error opening video stream or file" << std::endl;
+        return -1;
+    }
+    cv::Mat frame;
+    cap >> frame;
+
+    cv::namedWindow("photo_detector");
+    cv::namedWindow("video_detector");
+
+    cv::createTrackbar("threshold", "photo_detector", &threshold_level, 255,
+                       photo_callback);
+    cv::createTrackbar("threshold", "video_detector", &threshold_level, 255);
+    while (true) {
+
+        cap >> frame;
+
+        if (frame.empty()) {
+            cap.set(cv::CAP_PROP_POS_FRAMES, 1);
+            cap >> frame;
+        }
+        cv::imshow("video_detector", detect(frame));
+
+        if (cv::waitKey(5) == 27) break;
+    }
+    cap.release();
+    cv::destroyAllWindows();
     return 0;
 }
