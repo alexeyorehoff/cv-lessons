@@ -44,8 +44,8 @@ cv::Mat detect(cv::Mat img) {
     cv::blur(img, blur, {10, 10});
     cv::cvtColor(img, hsv, cv::COLOR_BGR2HSV);
 
-    cv::Scalar red_range_lower(0, 20, 20);
-    cv::Scalar red_range_upper(15, 255, 255);
+    cv::Scalar red_range_lower(150, 20, 20);
+    cv::Scalar red_range_upper(255, 255, 255);
 
     cv::Scalar green_range_lower(60, 50, 50);
     cv::Scalar green_range_upper(75, 255, 255);
@@ -75,7 +75,7 @@ cv::Mat detect(cv::Mat img) {
     cv::circle(res, get_contour_center(nearest_contour(green_contours, light_center)), 5, cv::Scalar(0, 255, 0), -1);
     cv::circle(res, get_contour_center(nearest_contour(blue_contours, light_center)), 5, cv::Scalar(255, 0, 0), -1);
 
-    return red;
+    return res;
 }
 
 
