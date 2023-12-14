@@ -48,8 +48,8 @@ static void photo_callback(int, void*) {
 
 
 int main() {
-    original = cv::imread("../lab3/img/allababah/ig_0.jpg");
-    cap = cv::VideoCapture("../lab3/img/allababah/v_1.mp4");
+    original = cv::imread("../lab3/img/task1/ig_0.jpg");
+    cap = cv::VideoCapture("../lab3/img/task1/v_1.mp4");
 
     if(!cap.isOpened()){
         std::cerr << "Error opening video stream or file" << std::endl;

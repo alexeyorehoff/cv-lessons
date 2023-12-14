@@ -49,7 +49,7 @@ static void photo_callback(int, void*) {
 
 
 int main() {
-    original = cv::imread("../lab3/img/teplovizor/img2.jpg");
+    original = cv::imread("../lab3/img/task2/img2.jpg");
 
     cv::namedWindow("photo_detector");
     cv::createTrackbar("threshold", "photo_detector", &threshold_level, 255,
