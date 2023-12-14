@@ -13,18 +13,18 @@ std::vector<std::vector<cv::Point>> find_contours(cv::Mat image) {
     return res;
 }
 
-cv::Vec2i get_contour_center(std::vector<cv::Point> contour) {
+cv::Point get_contour_center(const std::vector<cv::Point> &contour) {
     cv::Moments moments = cv::moments(contour);
     int cX = int(moments.m10 / moments.m00);
     int cY = int(moments.m01 / moments.m00);
     return {cX, cY};
 }
 
-int vec_length(cv::Vec2i first, cv::Vec2i second) {
-    return (int)sqrt(pow(first[0] - second[0], 2) + pow(first[0] - second[0], 2));
+int vec_length(cv::Point first, cv::Point second) {
+    return (int)sqrt(pow(first.x - second.x, 2) + pow(first.y - second.y, 2));
 }
 
-std::vector<cv::Point> nearest_contour(std::vector<std::vector<cv::Point>> contours, cv::Vec2i center) {
+std::vector<cv::Point> nearest_contour(const std::vector<std::vector<cv::Point>> &contours, cv::Point center) {
     int min_length = INT_MAX;
     int restricted_zone = 50;
     std::vector<cv::Point> nearest;
