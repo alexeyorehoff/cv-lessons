@@ -126,10 +126,41 @@ void fft_radix2(std::vector<std::complex<double>> &src, std::vector<std::complex
 }
 
 
+cv::Mat convolution(cv::Mat image, cv::Mat kernel)
+{
+    image.convertTo(image, CV_32F);
+    kernel.convertTo(kernel, CV_32F);
+
+    int m = cv::getOptimalDFTSize(image.rows + kernel.rows - 1);
+    int n = cv::getOptimalDFTSize(image.cols + kernel.cols - 1);
+
+    cv::Mat padded_image, padded_kernel;
+    copyMakeBorder(image, padded_image, 0, m - image.rows, 0, n - image.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+    copyMakeBorder(kernel, padded_kernel, 0, m - kernel.rows, 0, n - kernel.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+
+    cv::Mat complex_image, complex_kernel;
+    cv::dft(padded_image, complex_image, cv::DFT_COMPLEX_OUTPUT);
+    cv::dft(padded_kernel, complex_kernel, cv::DFT_COMPLEX_OUTPUT);
+
+    cv::Mat complex_result;
+    cv::mulSpectrums(complex_image, complex_kernel, complex_result, 0);
+
+    return complex_result;
+}
+
+cv::Mat reconstruct(cv::Mat src) {
+    cv::Mat result;
+    cv::idft(src, result, cv::DFT_SCALE | cv::DFT_REAL_OUTPUT);
+    normalize(result, result, 0, 255, cv::NORM_MINMAX);
+    result.convertTo(result, CV_8U);
+    return result;
+}
+
+
 void test_dft(cv::Mat image) {
     auto start = steady_clock::now();
     cv::Mat dft_img = dft(image);
-    std::cout << "DIY fourier: " << start - steady_clock::now() << std::endl;
+    std::cout << "DIY fourier: " << steady_clock::now() - start << std::endl;
     cv::Mat magnitude = display_magnitude(dft_img);
     cv::imshow("fourier", magnitude);
     cv::Mat idft_res = idft(dft_img);
@@ -143,19 +174,49 @@ void test_fft(cv::Mat image) {
     cv::resize(image, image, {m, n});
     std::cout << m << " " << n << std::endl;
     auto start = steady_clock::now();
-    std::vector<std::complex<double>> t = mat2vec(image);
-    std::vector<std::complex<double>> t1;
-    fft_radix2(t, t1, false);
-    std::cout << "radix: " << start - steady_clock::now() << std::endl;
-    cv::imshow("fft", display_magnitude(vec2mat(t1, image.size())));
+    std::vector<std::complex<double>> image_vector = mat2vec(image);
+    std::vector<std::complex<double>> fft_result;
+    fft_radix2(image_vector, fft_result, false);
+    std::cout << "radix: " << steady_clock::now() - start << std::endl;
+    cv::imshow("fft", display_magnitude(vec2mat(fft_result, image.size())));
 
     cv::waitKey(0);
 }
 
+void test_cv_fft(cv::Mat image) {
+    auto start = steady_clock::now();
+    image.convertTo(image, CV_32F);
+    cv::dft(image, image, cv::DFT_SCALE | cv::DFT_REAL_OUTPUT);
+    std::cout << "opencv fft time: " << steady_clock::now() - start << std::endl;
+    cv::imshow("Reversed Image", image);
+}
+
+void test_convolution(cv::Mat image) {
+    cv::Mat sobel_kernel_x = (cv::Mat_<double>(3, 3) << -1, 0, 1, -2, 0, 2, -1, 0, 1);
+    cv::Mat sobel_kernel_y = (cv::Mat_<double>(3, 3) << -1, -2, -1, 0, 0, 0, 1, 2, 1);
+    cv::Mat box_kernel = (1.f / 9 * (cv::Mat_<double>(3, 3) << 1, 1, 1, 1, 1, 1, 1, 1, 1));
+    cv::Mat laplace_kernel = (cv::Mat_<double>(3, 3) << 0, 1, 0, 1, -4, 1, 0, 1, 0);
+
+    cv::Mat sobel_res_x = convolution(image, sobel_kernel_x);
+    cv::Mat sobel_res_y = convolution(image, sobel_kernel_y);
+    cv::Mat box_res = convolution(image, box_kernel);
+    cv::Mat laplace_res = convolution(image, laplace_kernel);
+
+    cv::imshow("sx", display_magnitude(sobel_res_x));
+    cv::imshow("sy", display_magnitude(sobel_res_y));
+    cv::imshow("box", display_magnitude(box_res));
+    cv::imshow("lp", display_magnitude(laplace_res));
+
+    cv::imshow("sxr", reconstruct(sobel_res_x));
+    cv::imshow("syr", reconstruct(sobel_res_y));
+    cv::imshow("boxr", reconstruct(box_res));
+    cv::imshow("lpr", reconstruct(laplace_res));
+    cv::waitKey();
+}
+
 
 int main() {
-        cv::Mat image = imread("../lab4/lenna.png", cv::IMREAD_GRAYSCALE);
-//    cv::resize(image, image, {128, 128}, cv::INTER_LINEAR);
+    cv::Mat image = imread("../lab4/lenna.png", cv::IMREAD_GRAYSCALE);
 
     if (image.empty()) {
         std::cerr << "Could not open or find the image!" << std::endl;
@@ -165,8 +226,8 @@ int main() {
     cv::imshow("original", image);
 
 
-    test_fft(image);
-
-
+//    test_fft(image.clone());
+//    test_cv_fft(image.clone());
+    test_convolution(image.clone());
     return 0;
 }
