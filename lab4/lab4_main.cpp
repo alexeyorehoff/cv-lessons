@@ -4,9 +4,9 @@
 
 
 #define PI 3.14159265354
+using std::chrono::steady_clock;
 
 
-// Функция для выполнения двумерного БПФ
 cv::Mat dft(cv::Mat& image) {
     int M = image.rows;
     int N = image.cols;
@@ -16,7 +16,8 @@ cv::Mat dft(cv::Mat& image) {
             std::complex<double> Fkl(0, 0);
             for (int i = 0; i < M; i++) {
                 for (int j = 0; j < N; j++) {
-                    Fkl += (double)image.at<uint8_t>(i, j) * std::exp(std::complex<double>(0, -2 * PI * (k * i / (double)M + l * j / (double)N)));
+                    Fkl += (double)image.at<uint8_t>(i, j) *
+                            std::exp(std::complex<double>(0, -2 * PI * (k * i / (double)M + l * j / (double)N)));
                 }
             }
             res.at<std::complex<double>>(k, l) = Fkl;
@@ -47,8 +48,6 @@ cv::Mat idft(cv::Mat src) {
     return res;
 }
 
-
-
 void dft_shuffle(cv::Mat& src) {
     int cx = src.cols / 2;
     int cy = src.rows / 2;
@@ -65,10 +64,6 @@ void dft_shuffle(cv::Mat& src) {
     tmp.copyTo(q2);
 }
 
-
-
-
-
 cv::Mat display_magnitude(cv::Mat image) {
     cv::Mat planes[2], magnitude;
     cv::split(image, planes);
@@ -77,19 +72,91 @@ cv::Mat display_magnitude(cv::Mat image) {
     dft_shuffle(magnitude);
     cv::normalize(magnitude, magnitude, 0, 1, cv::NORM_MINMAX);
     return magnitude;
-//    magnitude.convertTo(magnitude, CV_8U);
-//    cv::Mat hsv_img, hsv_channels[3] = {magnitude, magnitude.setTo(255), magnitude.setTo(255)};
-//    cv::merge(hsv_channels, 3, hsv_img);
-//    cv::cvtColor(hsv_img, hsv_img, cv::COLOR_HSV2BGR);
-//    return hsv_img;
 }
 
+std::vector<std::complex<double>> mat2vec(cv::Mat image)
+{
+    std::vector<uchar> imageVector(image.begin<uint8_t>(), image.end<uint8_t>());
+    std::vector<std::complex<double>> complexVector(imageVector.size());
+    for (int idx = 0; idx < imageVector.size(); idx++)
+        complexVector[idx] = std::complex<double>(imageVector[idx], 0);
+    return complexVector;
+}
+
+cv::Mat vec2mat(const std::vector<std::complex<double>> &complexVector, cv::Size size) {
+    cv::Mat resultMat(size, CV_64FC2);
+    for (int i = 0; i < size.height; ++i)
+        for (int j = 0; j < size.width; ++j)
+            resultMat.at<cv::Vec2d>(i, j) = {complexVector[i * size.width + j].real(), complexVector[i * size.width + j].imag()};
+    return resultMat;
+}
+
+
+void fft_radix2(std::vector<std::complex<double>> &src, std::vector<std::complex<double>> &res, bool inverse) {
+    size_t N = src.size();
+    if (N == 1) {
+        res = src;
+        return;
+    }
+    std::vector<std::complex<double>> y_even, y_odd;
+    y_even.reserve(N / 2);
+    y_odd.reserve(N / 2);
+    for (int i = 0; i < N / 2; ++i) {
+        y_even.push_back(src[2 * i]);
+        y_odd.push_back(src[2 * i + 1]);
+    }
+
+    fft_radix2(y_even, y_even, inverse);
+    fft_radix2(y_odd, y_odd, inverse);
+
+    res.resize(N);
+    std::complex<double> wn(cos(2 * PI / (double)N), sin(2 * PI / (double)N) * (inverse ? 1 : -1));
+    std::complex<double> w(1);
+    for (int i = 0; i < N / 2; ++i) {
+        res[i] = y_even[i] + w * y_odd[i];
+        res[i + N / 2] = y_even[i] - w * y_odd[i];
+        w *= wn;
+    }
+
+    if (inverse) {
+        for (int i = 0; i < N; ++i) {
+            res[i] /= (double)N;
+        }
+    }
+}
+
+
+void test_dft(cv::Mat image) {
+    auto start = steady_clock::now();
+    cv::Mat dft_img = dft(image);
+    std::cout << "DIY fourier: " << start - steady_clock::now() << std::endl;
+    cv::Mat magnitude = display_magnitude(dft_img);
+    cv::imshow("fourier", magnitude);
+    cv::Mat idft_res = idft(dft_img);
+    cv::imshow("fourier reconstruct", idft_res);
+    cv::waitKey();
+}
+
+void test_fft(cv::Mat image) {
+    int m = cv::getOptimalDFTSize(image.rows);
+    int n = cv::getOptimalDFTSize(image.cols);
+    cv::resize(image, image, {m, n});
+    std::cout << m << " " << n << std::endl;
+    auto start = steady_clock::now();
+    std::vector<std::complex<double>> t = mat2vec(image);
+    std::vector<std::complex<double>> t1;
+    fft_radix2(t, t1, false);
+    std::cout << "radix: " << start - steady_clock::now() << std::endl;
+    cv::imshow("fft", display_magnitude(vec2mat(t1, image.size())));
+
+    cv::waitKey(0);
+}
+
+
 int main() {
-    using std::chrono::steady_clock;
-    // Загрузка изображения
-    cv::Mat image = imread("../lab4/lenna.png", cv::IMREAD_GRAYSCALE);
-    cv::resize(image, image, {128, 128}, cv::INTER_LINEAR);
-    // Проверка на успешную загрузку изображения
+        cv::Mat image = imread("../lab4/lenna.png", cv::IMREAD_GRAYSCALE);
+//    cv::resize(image, image, {128, 128}, cv::INTER_LINEAR);
+
     if (image.empty()) {
         std::cerr << "Could not open or find the image!" << std::endl;
         return -1;
@@ -97,17 +164,9 @@ int main() {
 
     cv::imshow("original", image);
 
-    auto start = steady_clock::now();
-    cv::Mat dft_img = dft(image);
 
-    std::cout << "DIY fourier: " << start - steady_clock::now() << std::endl;
-    cv::Mat magnitude = display_magnitude(dft_img);
+    test_fft(image);
 
-    cv::imshow("fourier", magnitude);
-
-    cv::Mat idft_res = idft(dft_img);
-    cv::imshow("fourier reconstruct", idft_res);
-    cv::waitKey(0);
 
     return 0;
 }
