@@ -214,6 +214,42 @@ void test_convolution(cv::Mat image) {
     cv::waitKey();
 }
 
+cv::Mat high_low_filter(const cv::Mat& input_image, double ratio, bool highPass = false) {
+    cv::Mat result = input_image.clone();
+    cv::Size size = input_image.size();
+    cv::Point center(size.width / 2, size.height / 2);
+    double radius = std::min(size.width, size.height) * ratio;
+
+    for (int y = 0; y < size.height; ++y) {
+        for (int x = 0; x < size.width; ++x) {
+            auto& pixel = result.at<cv::Vec2f>(y, x);
+            double distance = cv::norm(cv::Point(x, y) - center);
+            if ((highPass && distance <= radius) || (!highPass && distance > radius)) pixel = {0, 0};
+        }
+    }
+    return result;
+}
+
+void test_lower_upper_filter(cv::Mat image) {
+    image.convertTo(image, CV_32F);
+
+    int m = cv::getOptimalDFTSize(image.rows);
+    int n = cv::getOptimalDFTSize(image.cols);
+    cv::Mat padded_image, complex_image, shuffled;
+    copyMakeBorder(image, padded_image, 0, m - image.rows, 0, n - image.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+    cv::dft(padded_image, complex_image, cv::DFT_COMPLEX_OUTPUT);
+    dft_shuffle(complex_image);
+    cv::Mat high_pass = high_low_filter(complex_image, 0.15, false);
+    cv::Mat low_pass = high_low_filter(complex_image, 0.15, true);
+    dft_shuffle(high_pass);
+    dft_shuffle(low_pass);
+
+    cv::imshow("low", reconstruct(low_pass));
+    cv::imshow("high", reconstruct(high_pass));
+    cv::waitKey();
+
+}
+
 
 int main() {
     cv::Mat image = imread("../lab4/lenna.png", cv::IMREAD_GRAYSCALE);
@@ -222,12 +258,12 @@ int main() {
         std::cerr << "Could not open or find the image!" << std::endl;
         return -1;
     }
-
     cv::imshow("original", image);
-
 
 //    test_fft(image.clone());
 //    test_cv_fft(image.clone());
-    test_convolution(image.clone());
+//    test_convolution(image.clone());
+    test_lower_upper_filter(image.clone());
+
     return 0;
 }
