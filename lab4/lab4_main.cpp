@@ -250,6 +250,60 @@ void test_lower_upper_filter(cv::Mat image) {
 
 }
 
+void conjugate(cv::Mat& complex) {
+    std::vector<cv::Mat> planes;
+    split(complex, planes);
+    planes[1] *= -1; // Invert the sign of the imaginary part
+    merge(planes, complex);
+}
+
+//cv::Mat diy_match_template(const cv::Mat& img, const cv::Mat& tmpl) {
+//    cv::Mat paddedInput, paddedTemplate;
+//    int m = cv::getOptimalDFTSize(img.rows + tmpl.rows - 1);
+//    int n = cv::getOptimalDFTSize(img.cols + tmpl.cols - 1);
+//    copyMakeBorder(img, paddedInput, 0, m - img.rows, 0, n - img.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+//    copyMakeBorder(tmpl, paddedTemplate, 0, m - tmpl.rows, 0, n - tmpl.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+//
+//    cv::Mat imgFloat, templFloat;
+//    paddedInput.convertTo(imgFloat, CV_32F);
+//    paddedTemplate.convertTo(templFloat, CV_32F);
+//
+//    cv::Mat imgDFT, templDFT;
+//    dft(imgFloat, imgDFT, cv::DFT_COMPLEX_OUTPUT);
+//    dft(templFloat, templDFT, cv::DFT_COMPLEX_OUTPUT);
+//
+//    std::vector<cv::Mat> planes;
+//    split(templDFT, planes);
+//    planes[1] *= -1;
+//    merge(planes, templDFT);
+//
+//    cv::Mat multiplied, result;
+//    mulSpectrums(imgDFT, templDFT, multiplied, 0, false); // Ensure no scaling
+//    idft(multiplied, result, cv::DFT_REAL_OUTPUT | cv::DFT_SCALE);
+//    return result;
+//}
+
+cv::Mat correlation(cv::Mat plate, cv::Mat symbol) {
+    cv::Mat result, img_display;
+    plate.copyTo(img_display);
+    int result_cols = plate.cols - symbol.cols + 1;
+    int result_rows = plate.rows - symbol.rows + 1;
+    result.create(result_rows, result_cols, CV_32FC1);
+    matchTemplate(plate, symbol, result, 1);
+    normalize(result, result, 0, 1, cv::NORM_MINMAX);
+    return result;
+}
+
+void test_correlation() {
+    cv::Mat image = imread("../lab4/img_2.jpg", cv::IMREAD_GRAYSCALE);
+    cv::Mat letter_a = imread("../lab4/a.jpg", cv::IMREAD_GRAYSCALE);
+    cv::Mat letter_0 = imread("../lab4/0.jpg", cv::IMREAD_GRAYSCALE);
+
+    cv::imshow("letter_0", correlation(image, letter_0));
+    cv::imshow("letter_a", correlation(image, letter_a));
+    cv::waitKey();
+}
+
 
 int main() {
     cv::Mat image = imread("../lab4/lenna.png", cv::IMREAD_GRAYSCALE);
@@ -258,12 +312,13 @@ int main() {
         std::cerr << "Could not open or find the image!" << std::endl;
         return -1;
     }
-    cv::imshow("original", image);
+//    cv::imshow("original", image);
 
 //    test_fft(image.clone());
 //    test_cv_fft(image.clone());
 //    test_convolution(image.clone());
-    test_lower_upper_filter(image.clone());
+//    test_lower_upper_filter(image.clone());
+    test_correlation();
 
     return 0;
 }
