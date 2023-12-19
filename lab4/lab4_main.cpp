@@ -74,8 +74,7 @@ cv::Mat display_magnitude(cv::Mat image) {
     return magnitude;
 }
 
-std::vector<std::complex<double>> mat2vec(cv::Mat image)
-{
+std::vector<std::complex<double>> mat2vec(cv::Mat image) {
     std::vector<uchar> imageVector(image.begin<uint8_t>(), image.end<uint8_t>());
     std::vector<std::complex<double>> complexVector(imageVector.size());
     for (int idx = 0; idx < imageVector.size(); idx++)
@@ -99,11 +98,11 @@ void fft_radix2(std::vector<std::complex<double>> &src, std::vector<std::complex
         return;
     }
     std::vector<std::complex<double>> y_even, y_odd;
-    y_even.reserve(N / 2);
-    y_odd.reserve(N / 2);
+    y_even.resize(N / 2);
+    y_odd.resize(N / 2);
     for (int i = 0; i < N / 2; ++i) {
-        y_even.push_back(src[2 * i]);
-        y_odd.push_back(src[2 * i + 1]);
+        y_even[i] = src[2 * i];
+        y_odd[i] = src[2 * i + 1];
     }
 
     fft_radix2(y_even, y_even, inverse);
@@ -184,17 +183,24 @@ void test_fft(cv::Mat image) {
 }
 
 void test_cv_fft(cv::Mat image) {
+    cv::Mat float_image;
+    image.convertTo(float_image, CV_32F);
+    cv::Mat complex_image = cv::Mat(float_image.size(), CV_32FC2);
+    cv::Mat plane[] = {float_image, cv::Mat::zeros(float_image.size(), CV_32F)};
+    cv::merge(plane, 2, complex_image);
+
     auto start = steady_clock::now();
-    image.convertTo(image, CV_32F);
-    cv::dft(image, image, cv::DFT_SCALE | cv::DFT_REAL_OUTPUT);
+    cv::dft(complex_image, complex_image);
     std::cout << "opencv fft time: " << steady_clock::now() - start << std::endl;
-    cv::imshow("Reversed Image", image);
+
+    cv::imshow("cv fft", display_magnitude(complex_image));
+    cv::waitKey();
 }
 
 void test_convolution(cv::Mat image) {
     cv::Mat sobel_kernel_x = (cv::Mat_<double>(3, 3) << -1, 0, 1, -2, 0, 2, -1, 0, 1);
     cv::Mat sobel_kernel_y = (cv::Mat_<double>(3, 3) << -1, -2, -1, 0, 0, 0, 1, 2, 1);
-    cv::Mat box_kernel = (1.f / 9 * (cv::Mat_<double>(3, 3) << 1, 1, 1, 1, 1, 1, 1, 1, 1));
+    cv::Mat box_kernel = ((cv::Mat_<double>(3, 3) << 1, 1, 1, 1, 1, 1, 1, 1, 1) / 9);
     cv::Mat laplace_kernel = (cv::Mat_<double>(3, 3) << 0, 1, 0, 1, -4, 1, 0, 1, 0);
 
     cv::Mat sobel_res_x = convolution(image, sobel_kernel_x);
@@ -230,6 +236,7 @@ cv::Mat high_low_filter(const cv::Mat& input_image, double ratio, bool highPass 
     return result;
 }
 
+
 void test_lower_upper_filter(cv::Mat image) {
     image.convertTo(image, CV_32F);
 
@@ -250,32 +257,39 @@ void test_lower_upper_filter(cv::Mat image) {
 
 }
 
+
 void correlation(const cv::Mat& img, const cv::Mat& templ, cv::Mat& result) {
-    cv::Mat paddedInput, paddedTemplate;
+    cv::Mat padded_img, padded_templ;
     int m = cv::getOptimalDFTSize(img.rows + templ.rows - 1);
     int n = cv::getOptimalDFTSize(img.cols + templ.cols - 1);
-    copyMakeBorder(img, paddedInput, 0, m - img.rows, 0, n - img.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
-    copyMakeBorder(templ, paddedTemplate, 0, m - templ.rows, 0, n - templ.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+    cv::copyMakeBorder(img, padded_img, 0, m - img.rows, 0, n - img.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+    cv::copyMakeBorder(templ, padded_templ, 0, m - templ.rows, 0, n - templ.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
 
-    cv::Mat imgFloat, templFloat;
-    paddedInput.convertTo(imgFloat, CV_32F);
-    paddedTemplate.convertTo(templFloat, CV_32F);
+    cv::Mat img_float, templ_float;
+    padded_img.convertTo(img_float, CV_32F);
+    padded_templ.convertTo(templ_float, CV_32F);
 
-    cv::Mat imgDFT, templDFT;
-    dft(imgFloat, imgDFT, cv::DFT_COMPLEX_OUTPUT);
-    dft(templFloat, templDFT, cv::DFT_COMPLEX_OUTPUT);
+//    cv::normalize(img_float, img_float, 0, 1, cv::NORM_MINMAX);
+//    cv::normalize(templ_float, templ_float, 0, 1, cv::NORM_MINMAX);
+
+    cv::Mat img_dft, templ_dft;
+    cv::dft(img_float, img_dft, cv::DFT_COMPLEX_OUTPUT);
+    cv::dft(templ_float, templ_dft, cv::DFT_COMPLEX_OUTPUT);
 
     std::vector<cv::Mat> planes;
-    split(templDFT, planes);
+    cv::split(templ_dft, planes);
     planes[1] *= -1;
-    merge(planes, templDFT);
+    cv::merge(planes, templ_dft);
 
     cv::Mat multiplied;
-    mulSpectrums(imgDFT, templDFT, multiplied, 0, false); // Ensure no scaling
-    idft(multiplied, result, cv::DFT_REAL_OUTPUT | cv::DFT_SCALE);
-    cv::normalize(result(cv::Rect(0, 0, img.cols - templ.cols + 1, img.rows - templ.rows - 1)),
-                  result, 0, 1, cv::NORM_MINMAX);
+    cv::mulSpectrums(img_dft, templ_dft, multiplied, 0, false); // Ensure no scaling
+
+    cv::idft(multiplied, result, cv::DFT_REAL_OUTPUT | cv::DFT_SCALE);
+
+    result = result(cv::Rect(0, 0, img.cols - templ.cols, img.rows - templ.rows));
+    cv::copyMakeBorder(result, result, templ.rows / 2, 0, templ.cols / 2, 0, cv::BORDER_CONSTANT, cv::Scalar::all(0));
 }
+
 
 void test_correlation() {
     cv::Mat image = imread("../lab4/img_2.jpg", cv::IMREAD_GRAYSCALE);
@@ -284,8 +298,38 @@ void test_correlation() {
     cv::Mat correlation_0, correlation_a;
     correlation(image, letter_0, correlation_0);
     correlation(image, letter_a, correlation_a);
-    cv::imshow("letter_0", correlation_0);
+    cv::normalize(correlation_0, correlation_0, 0, 255, cv::NORM_MINMAX, CV_8U);
+    cv::normalize(correlation_a, correlation_a, 0, 255, cv::NORM_MINMAX, CV_8U);
+    cv::imshow("letter_0", correlation_0  );
     cv::imshow("letter_a", correlation_a);
+    cv::waitKey();
+}
+
+
+cv::Mat encircle_brightest(cv::Mat mask, cv::Mat image, int radius = 25) {
+    double max_val;
+    cv::Point max_loc;
+    minMaxLoc(mask, nullptr, &max_val, nullptr, &max_loc);
+    circle(image, max_loc, radius, (0, 255, 0), 2);
+    return image;
+}
+
+
+void manul_test() {
+    cv::Mat image = imread("../lab4/manul.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat templ = imread("../lab4/ear.png", cv::IMREAD_GRAYSCALE);
+
+    cv::Mat result, image_temp, templ_temp;
+
+    cv::Laplacian(image, image_temp, CV_8U);
+    cv::Laplacian(templ, templ_temp, CV_8U);
+
+    correlation(image_temp, templ_temp, result);
+
+    cv::normalize(result, result, 0, 255, cv::NORM_MINMAX, CV_8U);
+    cv::imshow("correlation", result);
+    cv::imshow("manul_orig", encircle_brightest(result, image));
+
     cv::waitKey();
 }
 
@@ -303,7 +347,8 @@ int main() {
 //    test_cv_fft(image.clone());
 //    test_convolution(image.clone());
 //    test_lower_upper_filter(image.clone());
-    test_correlation();
+//    test_correlation();
+    manul_test();
 
     return 0;
 }

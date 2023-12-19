@@ -10,15 +10,9 @@
 
 double compare_img(cv::Mat first, cv::Mat second) {
     assert(first.cols == second.cols && first.rows == second.rows);
-    double res = 0;
-    for (int x = 0; x < first.cols - 1; x++) {
-        for (int y = 0; y < first.rows - 1; y++) {
-            auto first_value = first.at<uint8_t>(x, y);
-            auto second_value = second.at<uint8_t>(x, y);
-            res += fabs(first_value - second_value) / second_value;
-        }
-    }
-    return 100 - 100 * res / (first.cols * first.rows);
+    cv::Mat res;
+    cv::absdiff(first, second, res);
+    return 100 - 100 * (float)cv::sum(res)[0] / cv::sum(second)[0];
 }
 
 cv::Mat img_diff(cv::Mat first, cv::Mat second) {
@@ -32,22 +26,17 @@ cv::Mat log_amplify(cv::Mat src) {
     ampl.convertTo(ampl, CV_32F);
     cv::log(ampl + 1, ampl);
     cv::normalize(ampl, ampl, 0, 255, cv::NORM_MINMAX);
-    ampl.convertTo(ampl, CV_32F);
+    ampl.convertTo(ampl, CV_8S);
     return ampl;
 }
 
 
 cv::Mat box_filter(cv::Mat img, ushort box_size=3) {
-    cv::Mat res = img.clone();
-    assert(img.channels() == 1 && box_size % 2 == 1);
-    for (int y = 0; y <= img.rows - box_size; y++) {
-        for (int x = 0; x <= img.cols - box_size; x++) {
-            cv::Mat roi_rect = img(cv::Rect(x, y, box_size, box_size));
-            res.at<uint8_t>(y + box_size / 2, x + box_size / 2) =
-                    (uint8_t)(cv::sum(roi_rect) / (box_size * box_size))[0];
-        }
-    }
-    return res;
+    assert(!img.empty() && img.channels() == 1 && box_size % 2 != 0 && box_size >= 3);
+    cv::Mat box_filter;
+    cv::Mat kernel = cv::Mat::ones(box_size, box_size, CV_32F) / (box_size * box_size);
+    filter2D(img, box_filter, -1, kernel);
+    return box_filter;
 }
 
 cv::Mat unsharp_mask(cv::Mat img, double alpha = 0.5) {
