@@ -3,12 +3,14 @@ project(cv_lessons)
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(OpenCV_DIR C:/libs/opencv/build-debug)
+set(OpenCV_DIR C:/libs/opencv/opencv-debug)
 find_package(OpenCV REQUIRED)
 
 include_directories(
         ${OpenCV_INCLUDE_DIRS}
         lab1 lab1_2 lab2 lab3
+        libs/glew-2.1.0/include
+        libs/glfw-3.4/include
 )
 
 add_executable(lab1 lab1/lab1_main.cpp lab1/sprite.h lab1/app.h)
@@ -19,6 +21,9 @@ add_executable(lab3_2 lab3/lab3_2.cpp)
 add_executable(lab3_3 lab3/lab3_3.cpp)
 add_executable(lab3_4 lab3/lab3_4.cpp)
 add_executable(lab4 lab4/lab4_main.cpp)
+add_executable(lab5 lab5/lab5_main.cpp lab5/texture_render.h lab5/shader.h
+        lab5/window.h)
+
 
 target_link_libraries(lab1 ${OpenCV_LIBS})
 target_link_libraries(lab1_2 ${OpenCV_LIBS})
@@ -28,3 +33,8 @@ target_link_libraries(lab3_2 ${OpenCV_LIBS})
 target_link_libraries(lab3_3 ${OpenCV_LIBS})
 target_link_libraries(lab3_4 ${OpenCV_LIBS})
 target_link_libraries(lab4 ${OpenCV_LIBS})
+
+add_compile_definitions(GLEW_STATIC)
+
+target_link_libraries(lab5 ${OpenCV_LIBS} opengl32.lib)
+target_link_libraries(lab5 ../libs/glfw-3.4/lib-vc2019/glfw3 ../libs/glew-2.1.0/lib/Release/x64/glew32s)
