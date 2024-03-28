@@ -3,7 +3,6 @@
 #include "opencv2/highgui.hpp"
 #include "window.h"
 #include "texture_render.h"
-#include "shader.h"
 
 const int width = 1920;
 const int height = 1080;
@@ -26,13 +25,10 @@ int main() {
         if (frame.empty())
             break;
 
-        // Update texture with the new frame
         renderer.update_texture(frame);
 
-        // Render the texture
         renderer.Render();
 
-        // Swap buffers and poll events
         window.swap();
         glfwPollEvents();
     }
