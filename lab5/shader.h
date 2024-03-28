@@ -64,21 +64,4 @@ unsigned int CreateShader(const GLchar* vs_path, const GLchar* fs_path){
     return program;
 }
 
-class Shader {
-public:
-    GLuint ID;
-
-    Shader(const char* vertex_source, const char* fragment_source);
-
-    void use() const { glUseProgram(ID); }
-
-    void destroy() const { glDeleteProgram(ID); }
-};
-
-Shader::Shader(const char *vertex_source, const char *fragment_source) {
-    ID = CreateShader(vertex_source, fragment_source);
-    this->use();
-}
-
-
 #endif //SHADER_CLASS_H
