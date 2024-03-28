@@ -10,7 +10,6 @@ const char* vertex_shader_path = "../lab5/shaders/vertex.glsl";
 const char* fragment_shader_path = "../lab5/shaders/fragment.glsl";
 
 GLfloat vertices[] = {
-        // Positions    // Texture Coords
         -1.0f, -1.0f,  0.0f, 0.0f,
         1.0f, -1.0f,  1.0f, 0.0f,
         1.0f,  1.0f,  1.0f, 1.0f,
@@ -24,16 +23,16 @@ GLuint indices[] = {
 
 class Renderer {
 private:
-    GLuint vao_id;
-    GLuint vbo_id;
-    GLuint ebo_id;
+    GLuint vao_id = 0;
+    GLuint vbo_id = 0;
+    GLuint ebo_id = 0;
     GLuint shader_program;
-    GLuint texture;
+    GLuint texture = 0;
 
 public:
     Renderer();
-    void Render();
-    void update_texture(const cv::Mat& frame);
+    void Render() const;
+    void update_texture(const cv::Mat& frame) const;
 };
 
 Renderer::Renderer() {
@@ -70,20 +69,20 @@ Renderer::Renderer() {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Renderer::update_texture(const cv::Mat& frame) {
+void Renderer::update_texture(const cv::Mat& frame) const {
     glBindTexture(GL_TEXTURE_2D, texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame.cols, frame.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, frame.data);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Renderer::Render() {
+void Renderer::Render() const {
     glClearColor(0.1, 0.1, 0.1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(shader_program);
     glBindVertexArray(vao_id);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
 }
 

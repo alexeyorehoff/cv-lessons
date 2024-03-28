@@ -8,31 +8,31 @@ find_package(OpenCV REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 
-include_directories(
-        ${OpenCV_INCLUDE_DIRS}
-        lab1 lab1_2 lab2 lab3
-)
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 add_executable(lab1 lab1/lab1_main.cpp lab1/sprite.h lab1/app.h)
-add_executable(lab1_2 lab1_2/lab1_2_main.cpp lab1/sprite.h lab1/app.h)
-add_executable(lab2 lab2/lab2_main.cpp)
-add_executable(lab3_1 lab3/lab3_1.cpp)
-add_executable(lab3_2 lab3/lab3_2.cpp)
-add_executable(lab3_3 lab3/lab3_3.cpp)
-add_executable(lab3_4 lab3/lab3_4.cpp)
-add_executable(lab4 lab4/lab4_main.cpp)
-add_executable(lab5 lab5/lab5_main.cpp lab5/texture_render.h lab5/shader.h
-        lab5/window.h)
-
-
 target_link_libraries(lab1 ${OpenCV_LIBS})
+
+add_executable(lab1_2 lab1/lab1_2_main.cpp lab1/sprite.h lab1/app.h)
 target_link_libraries(lab1_2 ${OpenCV_LIBS})
+
+add_executable(lab2 lab2/lab2_main.cpp)
 target_link_libraries(lab2 ${OpenCV_LIBS})
+
+add_executable(lab3_1 lab3/lab3_1.cpp)
 target_link_libraries(lab3_1 ${OpenCV_LIBS})
+
+add_executable(lab3_2 lab3/lab3_2.cpp)
 target_link_libraries(lab3_2 ${OpenCV_LIBS})
+
+add_executable(lab3_3 lab3/lab3_3.cpp)
 target_link_libraries(lab3_3 ${OpenCV_LIBS})
+
+add_executable(lab3_4 lab3/lab3_4.cpp)
 target_link_libraries(lab3_4 ${OpenCV_LIBS})
+
+add_executable(lab4 lab4/lab4_main.cpp)
 target_link_libraries(lab4 ${OpenCV_LIBS})
 
-
-target_link_libraries(lab5 PRIVATE ${OpenCV_LIBS} opengl32.lib GLEW::GLEW glfw)
+add_executable(lab5 lab5/lab5_main.cpp lab5/texture_render.h lab5/shader.h lab5/window.h)
+target_link_libraries(lab5 ${OpenCV_LIBS} opengl32.lib GLEW::GLEW glfw)

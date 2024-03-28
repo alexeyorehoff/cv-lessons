@@ -31,10 +31,10 @@ public:
 
 
 int main() {
-    SimpleSpriteApp app(640, 480, "../lab1/background.jpg", "test_project");
+    SimpleSpriteApp app(640, 480, "../lab1/images/background1.jpg", "test_project");
 
-    Sprite<int> robot1("robot1", "../lab1/robot.png");
-    Sprite<int> robot2("robot2", "../lab1/robot.png");
+    Sprite<int> robot1("robot1", "../lab1/images/robot.png");
+    Sprite<int> robot2("robot2", "../lab1/images/robot.png");
     robot1.set_animation([](int time){return cv::Point2i(time, int(240 + 350 * sin((float)time / 100)));});
     robot2.set_animation([](int time){return cv::Point2i (time, int(200 + 150 * cos((float)time / 100)));});
 

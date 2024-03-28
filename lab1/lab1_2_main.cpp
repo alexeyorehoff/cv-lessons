@@ -51,12 +51,12 @@ public:
 
 int main() {
     // Body sun("sun", "../lab1_2/sun.png", 100, 500, 500, 0, 0);
-    Body planet1("planet1", "../lab1_2/planet.png", 5000, 100, 500, 0.5, 0);
-    Body planet2("planet2", "../lab1_2/planet.png", 75, 100, 700, 12, 0);
-    Body planet3("planet3", "../lab1_2/planet.png", 50, 100, 300, 10, 0);
-    Body planet4("planet4", "../lab1_2/planet.png", 100, 400, 500, 0, 10);
+    Body planet1("planet1", "../lab1/images/planet.png", 5000, 100, 500, 0.5, 0);
+    Body planet2("planet2", "../lab1/images/planet.png", 75, 100, 700, 12, 0);
+    Body planet3("planet3", "../lab1/images/planet.png", 50, 100, 300, 10, 0);
+    Body planet4("planet4", "../lab1/images/planet.png", 100, 400, 500, 0, 10);
 
-    NBodyApp app(1920, 1080, "../lab1_2/background.png", "test");
+    NBodyApp app(1920, 1080, "../lab1/images/background2.png", "test");
 
     app.add_sprite(planet1);
     app.add_sprite(planet2);
