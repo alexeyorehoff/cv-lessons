@@ -3,12 +3,16 @@ project(cv_lessons)
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(OpenCV_DIR D:/libs/opencv/debug)
+#set(OpenCV_DIR D:/libs/opencv/debug)
+set(OpenCV_DIR C:/libs/opencv/opencv-debug)
+
 find_package(OpenCV REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
+include_directories()
 
 add_executable(lab1 lab1/lab1_main.cpp lab1/sprite.h lab1/app.h)
 target_link_libraries(lab1 ${OpenCV_LIBS})
@@ -35,4 +39,4 @@ add_executable(lab4 lab4/lab4_main.cpp)
 target_link_libraries(lab4 ${OpenCV_LIBS})
 
 add_executable(lab5 lab5/lab5_main.cpp lab5/texture_render.h lab5/shader.h lab5/window.h)
-target_link_libraries(lab5 ${OpenCV_LIBS} opengl32.lib GLEW::GLEW glfw)
+target_link_libraries(lab5 ${OpenCV_LIBS} glm::glm opengl32.lib GLEW::GLEW glfw)

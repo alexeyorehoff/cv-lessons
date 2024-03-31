@@ -4,7 +4,10 @@
 
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
+#include <cmath>
 #include <iostream>
+
+#define PI 3.1415
 
 void glfw_error_callback(int error, const char* description) {
     std::cerr << "Glfw Error" << error << " : " << description << std::endl;
@@ -68,6 +71,12 @@ Window::Window(GLint width, GLint height, const char *title) {
 
     glfwSwapInterval(1);
     glfwSetWindowSizeCallback(window, glfw_resize_callback);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+
+//    gluPerspective(fovy, aspect, 0.1, 100);
 
     glViewport(0, 0, width, height);
 }
