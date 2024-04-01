@@ -9,63 +9,90 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
+#define PI 3.1415
+
 const char* bg_vertex_shader_path = "../lab5/shaders/vertex.glsl";
 const char* bg_fragment_shader_path = "../lab5/shaders/fragment.glsl";
 
 const char* cube_vertex_shader_path = "../lab5/shaders/cube_vertex.glsl";
 const char* cube_fragment_shader_path = "../lab5/shaders/cube_fragment.glsl";
 
-#define RED 1, 0, 0
-#define GREEN 0, 1, 0
-#define BLUE 0, 0, 1
+#define RED 1.0, 0.0, 0.0
+#define GREEN 0.0, 1.0, 0.0
+#define BLUE 0.0, 0.0, 1.0
+#define YELLOW 1.0f, 1.0f, 0.0f
+#define PURPLE 1.0f, 0.0f, 1.0f
+#define CYAN 0.0f, 1.0f, 1.0f
 
-
-GLfloat bg_vertices[] = {
+GLfloat quad_vertices[] = {
         -1.0f, -1.0f,  0.0f, 0.0f,
         1.0f, -1.0f,  1.0f, 0.0f,
         1.0f,  1.0f,  1.0f, 1.0f,
         -1.0f,  1.0f,  0.0f, 1.0f
 };
 
-GLuint bg_indices[] = {
+GLuint quad_indices[] = {
         0, 1, 2,
         2, 3, 0
-};  // Opengl vertices and indices needed to render Webcam stream into background
+};
 
 
 GLfloat cube_vertices[] = {
         // Front face
-        -0.5f, -0.5f, 0.5f, RED,     // 0
-        0.5f, -0.5f, 0.5f, GREEN,   // 1
-        0.5f,  0.5f, 0.5f, BLUE,    // 2
-        -0.5f,  0.5f, 0.5f, RED,     // 3
+        -0.5f, -0.5f, 0.5f,   RED,  // Bottom-left
+        0.5f, -0.5f, 0.5f,   RED,  // Bottom-right
+        0.5f,  0.5f, 0.5f,   RED,  // Top-right
+        -0.5f,  0.5f, 0.5f,   RED,  // Top-left
+
         // Back face
-        -0.5f, -0.5f, -0.5f, GREEN,   // 4
-        0.5f, -0.5f, -0.5f, BLUE,    // 5
-        0.5f,  0.5f, -0.5f, RED,     // 6
-        -0.5f,  0.5f, -0.5f, GREEN    // 7
+        -0.5f, -0.5f, -0.5f,  GREEN,  // Bottom-left
+        0.5f, -0.5f, -0.5f,  GREEN,  // Bottom-right
+        0.5f,  0.5f, -0.5f,  GREEN,  // Top-right
+        -0.5f,  0.5f, -0.5f,  GREEN,  // Top-left
+
+        // Top face
+        -0.5f,  0.5f, -0.5f,  BLUE,  // Front-left
+        0.5f,  0.5f, -0.5f,  BLUE,  // Front-right
+        0.5f,  0.5f,  0.5f,  BLUE,  // Back-right
+        -0.5f,  0.5f,  0.5f,  BLUE,  // Back-left
+
+        // Bottom face
+        -0.5f, -0.5f, -0.5f,  YELLOW,  // Front-left
+        0.5f, -0.5f, -0.5f,  YELLOW,  // Front-right
+        0.5f, -0.5f,  0.5f,  YELLOW,  // Back-right
+        -0.5f, -0.5f,  0.5f,  YELLOW,  // Back-left
+
+        // Right face
+        0.5f, -0.5f, -0.5f,  PURPLE,  // Front-bottom
+        0.5f,  0.5f, -0.5f,  PURPLE,  // Front-top
+        0.5f,  0.5f,  0.5f,  PURPLE,  // Back-top
+        0.5f, -0.5f,  0.5f,  PURPLE,  // Back-bottom
+
+        // Left face
+        -0.5f, -0.5f, -0.5f,  CYAN,  // Front-bottom
+        -0.5f,  0.5f, -0.5f,  CYAN,  // Front-top
+        -0.5f,  0.5f,  0.5f,  CYAN,  // Back-top
+        -0.5f, -0.5f,  0.5f,  CYAN   // Back-bottom
 };
 
 GLuint cube_indices[] = {
-        // Front face
-        0, 1, 2,
-        0, 2, 3,
-        // Top face
-        3, 2, 6,
-        3, 6, 7,
-        // Back face
-        7, 6, 5,
-        7, 5, 4,
-        // Bottom face
-        4, 5, 1,
-        4, 1, 0,
-        // Left face
-        4, 0, 3,
-        4, 3, 7,
-        // Right face
-        1, 5, 6,
-        1, 6, 2
+        0, 1, 2,  0, 2, 3,   // Front face
+        4, 5, 6,  4, 6, 7,   // Back face
+        8, 9, 10, 8, 10, 11, // Top face
+        12, 13, 14, 12, 14, 15, // Bottom face
+        16, 17, 18, 16, 18, 19, // Right face
+        20, 21, 22, 20, 22, 23  // Left face
 };
+
+
+void setup_opengl_projection(const cv::Mat& camera_matrix, int width, int height, glm::mat4 &projection_mat,
+                                  double near_plane = 0.1, double far_plane = 100) {
+    auto fx = camera_matrix.at<double>(0, 0);
+    auto fy = camera_matrix.at<double>(1, 1);
+    double fovy = 2.0 * atan(height / fy / 2) * 180 / PI;
+    double aspect = (width * fy) / (height * fx);
+    projection_mat = glm::perspective(fovy, aspect, near_plane, far_plane);
+}
 
 
 class Renderer {
@@ -82,29 +109,34 @@ private:
     GLuint cube_shader;
     GLuint texture = 0;
 
+    glm::mat4 projection_mat = {};
+    glm::mat4 transform_mat = {};
+
 public:
-    Renderer();
+    Renderer(int width, int height, const cv::Mat &cam_mat);
     void Render() const;
+    void update_position(glm::vec3 pos, glm::vec3 rot, float scale);
     void update_texture(const cv::Mat& frame) const;
 };
 
-Renderer::Renderer() {
+Renderer::Renderer(int width, int height, const cv::Mat &cam_mat) {
     if (glewInit() != GLEW_OK) {
         std::cerr << "GLEW initialization failed" << std::endl;
         exit(1);
     }
     std::cout << "Using GLEW " << glewGetString(GLEW_VERSION) << std::endl;
+    glClearColor(1, 1, 1, 1);
 
     glGenVertexArrays(1, &vao_id);
     glBindVertexArray(vao_id);
 
     glGenBuffers(1, &vbo_id);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_id);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(bg_vertices), bg_vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), quad_vertices, GL_STATIC_DRAW);
 
     glGenBuffers(1, &ebo_id);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_id);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(bg_indices), bg_indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quad_indices), quad_indices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)nullptr);
     glEnableVertexAttribArray(0);
@@ -137,6 +169,21 @@ Renderer::Renderer() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    setup_opengl_projection(cam_mat, width, height, projection_mat);
+}
+
+void Renderer::update_position(glm::vec3 pos, glm::vec3 rot, float scale) {
+    glm::mat4 trans_mat = glm::translate(glm::mat4(1.f), pos);
+
+    glm::mat4 rot_mat(1.0f);
+    rot_mat = glm::rotate(rot_mat, glm::radians(rot.x), glm::vec3(1.0f, 0.0f, 0.0f));
+    rot_mat = glm::rotate(rot_mat, glm::radians(rot.y), glm::vec3(0.0f, 1.0f, 0.0f));
+    rot_mat = glm::rotate(rot_mat, glm::radians(rot.z), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    glm::mat4 scale_mat = glm::scale(glm::mat4(1.f), glm::vec3(scale));
+
+    transform_mat = trans_mat * rot_mat * scale_mat;
 }
 
 void Renderer::update_texture(const cv::Mat& frame) const {
@@ -146,7 +193,6 @@ void Renderer::update_texture(const cv::Mat& frame) const {
 }
 
 void Renderer::Render() const {
-    glClearColor(0.1, 0.1, 0.1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(bg_shader);
     glBindVertexArray(vao_id);
@@ -154,22 +200,11 @@ void Renderer::Render() const {
     glBindTexture(GL_TEXTURE_2D, texture);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
-
-    // Set up perspective projection
-    glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1920.0f / 1080.0f, 0.1f, 100.0f);
-
-    // Set up view matrix
-    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.5f, 0.5f));
-
-    // Pass matrices to shader
     glUseProgram(cube_shader);
-    glUniformMatrix4fv(glGetUniformLocation(cube_shader, "projection_matrix"), 1, GL_FALSE, glm::value_ptr(projection));
-    glUniformMatrix4fv(glGetUniformLocation(cube_shader, "view_matrix"), 1, GL_FALSE, glm::value_ptr(view));
-
-    // Render the cube
+    glUniformMatrix4fv(glGetUniformLocation(cube_shader, "projection_matrix"), 1, GL_FALSE, glm::value_ptr(projection_mat));
+    glUniformMatrix4fv(glGetUniformLocation(cube_shader, "view_matrix"), 1, GL_FALSE, glm::value_ptr(transform_mat));
     glBindVertexArray(cube_vao_id);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-    glBindVertexArray(0);
 }
 
 #endif //CV_LESSONS_RENDERER_H
