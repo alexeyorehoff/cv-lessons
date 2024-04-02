@@ -4,10 +4,11 @@
 #include <iostream>
 #include "GL/glew.h"
 #include "opencv2/core.hpp"
-#include "shader.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
+
+#include "shader.h"
 
 #define PI 3.1415
 
@@ -23,6 +24,8 @@ const char* cube_fragment_shader_path = "../lab5/shaders/cube_fragment.glsl";
 #define YELLOW 1.0f, 1.0f, 0.0f
 #define PURPLE 1.0f, 0.0f, 1.0f
 #define CYAN 0.0f, 1.0f, 1.0f
+
+const float CUBE_SCALE = 0.3;
 
 GLfloat quad_vertices[] = {
         -1.0f, -1.0f,  0.0f, 0.0f,
@@ -89,10 +92,16 @@ void setup_opengl_projection(const cv::Mat& camera_matrix, int width, int height
                                   double near_plane = 0.1, double far_plane = 100) {
     auto fx = camera_matrix.at<double>(0, 0);
     auto fy = camera_matrix.at<double>(1, 1);
-    double fovy = 2.0 * atan(height / fy / 2) * 180 / PI;
-    double aspect = (width * fy) / (height * fx);
-    projection_mat = glm::perspective(fovy, aspect, near_plane, far_plane);
+    double cx = camera_matrix.at<double>(0, 2);
+    double cy = camera_matrix.at<double>(1, 2);
+
+    double aspect_ratio = static_cast<double>(width) / height;
+    double fovy = 2.0 * atan(height / (2.0 * fy)) * 180.0 / PI;
+
+    // Construct the projection matrix
+    projection_mat = glm::perspective(glm::radians(fovy), aspect_ratio, near_plane, far_plane);
 }
+
 
 
 class Renderer {
@@ -110,13 +119,11 @@ private:
     GLuint texture = 0;
 
     glm::mat4 projection_mat = {};
-    glm::mat4 transform_mat = {};
 
 public:
     Renderer(int width, int height, const cv::Mat &cam_mat);
-    void Render() const;
-    void update_position(glm::vec3 pos, glm::vec3 rot, float scale);
-    void update_texture(const cv::Mat& frame) const;
+    void render_img(const cv::Mat& frame) const;
+    void render_cube(const cv::Vec<double, 3> &pos, const cv::Vec<double, 3> &rot);
 };
 
 Renderer::Renderer(int width, int height, const cv::Mat &cam_mat) {
@@ -173,32 +180,42 @@ Renderer::Renderer(int width, int height, const cv::Mat &cam_mat) {
     setup_opengl_projection(cam_mat, width, height, projection_mat);
 }
 
-void Renderer::update_position(glm::vec3 pos, glm::vec3 rot, float scale) {
-    glm::mat4 trans_mat = glm::translate(glm::mat4(1.f), pos);
 
-    glm::mat4 rot_mat(1.0f);
-    rot_mat = glm::rotate(rot_mat, glm::radians(rot.x), glm::vec3(1.0f, 0.0f, 0.0f));
-    rot_mat = glm::rotate(rot_mat, glm::radians(rot.y), glm::vec3(0.0f, 1.0f, 0.0f));
-    rot_mat = glm::rotate(rot_mat, glm::radians(rot.z), glm::vec3(0.0f, 0.0f, 1.0f));
 
-    glm::mat4 scale_mat = glm::scale(glm::mat4(1.f), glm::vec3(scale));
+void Renderer::render_img(const cv::Mat& frame) const {
+    glClear(GL_COLOR_BUFFER_BIT);
 
-    transform_mat = trans_mat * rot_mat * scale_mat;
-}
-
-void Renderer::update_texture(const cv::Mat& frame) const {
     glBindTexture(GL_TEXTURE_2D, texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame.cols, frame.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, frame.data);
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
 
-void Renderer::Render() const {
-    glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(bg_shader);
     glBindVertexArray(vao_id);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindVertexArray(0);
+    glUseProgram(0);
+}
+
+void Renderer::render_cube(const cv::Vec<double, 3> &pos, const cv::Vec<double, 3> &rot) {
+    std::cout << "Render cube on " << pos << " "<< rot << std::endl;
+
+    auto model = glm::mat4(1.0f);
+//    model[1][1] *= -1;
+//    model[2][2] *= -1;
+    model = glm::translate(model, glm::vec3(pos[0], -pos[1], -pos[2]));
+
+
+    model = glm::rotate(model, static_cast<float>(rot[0]), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, static_cast<float>(rot[1]), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::rotate(model, static_cast<float>(rot[2]), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(CUBE_SCALE));
+
+    glm::mat4 transform_mat = model * scale;
+//    transform_mat = glm::inverse(transform_mat);
 
     glUseProgram(cube_shader);
     glUniformMatrix4fv(glGetUniformLocation(cube_shader, "projection_matrix"), 1, GL_FALSE, glm::value_ptr(projection_mat));
