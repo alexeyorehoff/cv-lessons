@@ -88,12 +88,34 @@ GLuint cube_indices[] = {
 };
 
 
-void setup_opengl_projection(const cv::Mat& camera_matrix, int width, int height, glm::mat4 &projection_mat,
-                                  double near_plane = 0.1, double far_plane = 999999) {
+glm::mat4 setup_opengl_projection(const cv::Mat& camera_matrix, int width, int height,
+                             double near_plane = 0.1, double far_plane = 999999) {
     auto fy = camera_matrix.at<double>(1, 1);
     double aspect_ratio = static_cast<double>(width) / height;
     double fovy = 2.0 * atan(height / (2.0 * fy)) * 180.0 / PI;
-    projection_mat = glm::perspective(glm::radians(fovy), aspect_ratio, near_plane, far_plane);
+    return glm::perspective(glm::radians(fovy), aspect_ratio, near_plane, far_plane);
+}
+
+cv::Mat RTtoOpenGL(const cv::Vec3d& rotationVector, const cv::Vec3d& translationVector) {
+    cv::Mat rotationMatrix;
+    cv::Rodrigues(rotationVector, rotationMatrix);
+
+    cv::Mat transformationMatrix = cv::Mat::eye(4, 4, CV_32F);
+
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            transformationMatrix.at<float>(i, j) = (float)rotationMatrix.at<double>(i, j);
+        }
+        transformationMatrix.at<float>(i, 3) = (float)translationVector[i];
+    }
+
+    cv::Mat cvToGl = cv::Mat::eye(4, 4, CV_32F);
+    cvToGl.at<float>(1, 1) *= -1; // Invert the y-axis
+    cvToGl.at<float>(2, 2) *= -1; // invert the z-axis
+    transformationMatrix = cvToGl * transformationMatrix;
+    cv::transpose(transformationMatrix , transformationMatrix);
+
+    return transformationMatrix;
 }
 
 
@@ -112,7 +134,7 @@ private:
     GLuint cube_shader;
     GLuint texture = 0;
 
-    glm::mat4 projection_mat = {};
+    glm::mat4 projection_mat;
 
 public:
     Renderer(int width, int height, const cv::Mat &cam_mat);
@@ -171,7 +193,7 @@ Renderer::Renderer(int width, int height, const cv::Mat &cam_mat) {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    setup_opengl_projection(cam_mat, width, height, projection_mat);
+    projection_mat = setup_opengl_projection(cam_mat, width, height);
 }
 
 
@@ -196,42 +218,14 @@ void Renderer::render_img(const cv::Mat& frame) const {
     glUseProgram(0);
 }
 
-void Renderer::render_cube(const cv::Vec<double, 3> &pos, const cv::Vec<double, 3> &rot) {
+void Renderer::render_cube(const cv::Vec3d &pos, const cv::Vec3d &rot) {
     std::cout << "Render cube on " << pos << " "<< rot << std::endl;
 
-    auto view_matrix = glm::mat4(1.0f);
-
-    // Convert rotation vector to rotation matrix
-    cv::Mat rotation;
-    cv::Rodrigues(rot, rotation);
-
-    // Transpose rotation matrix for OpenGL compatibility
-    rotation = rotation.t();
-
-    // Combine rotation and translation into view matrix
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
-            view_matrix[i][j] = (float)rotation.at<double>(i, j);
-        }
-//        view_matrix[3][i] = (float)pos[i];
-    }
-
-    view_matrix = glm::translate(view_matrix, glm::vec3(-(float)pos[0],
-                                                               -(float)pos[1],
-                                                               -(float)pos[2]));
-
-    // Apply scale
-    view_matrix = glm::scale(view_matrix, glm::vec3(CUBE_SCALE, CUBE_SCALE, CUBE_SCALE));
-
-    // Apply coordinate system conversion (if needed)
-    glm::mat4 cv2glm(1);
-    view_matrix[1][1] *= -1;
-    view_matrix[2][2] *= -1;
-    view_matrix *= cv2glm;
+    auto view_matrix = RTtoOpenGL(rot, pos);
 
     glUseProgram(cube_shader);
     glUniformMatrix4fv(glGetUniformLocation(cube_shader, "projection_matrix"), 1, GL_FALSE, glm::value_ptr(projection_mat));
-    glUniformMatrix4fv(glGetUniformLocation(cube_shader, "view_matrix"), 1, GL_FALSE, glm::value_ptr(view_matrix));
+    glUniformMatrix4fv(glGetUniformLocation(cube_shader, "view_matrix"), 1, GL_FALSE, view_matrix.ptr<float>(0));
     glBindVertexArray(cube_vao_id);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 }

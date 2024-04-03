@@ -13,6 +13,26 @@ const float marker_size = 0.065;
 const std::string calibration_file_path = "../lab5/calibration.xml";
 
 
+static void setup_detector_params(cv::aruco::DetectorParameters &params) {
+    params.adaptiveThreshWinSizeMin = 18;
+    params.adaptiveThreshWinSizeMax = 25;
+    params.adaptiveThreshWinSizeStep = 1;
+    params.adaptiveThreshConstant = 7;
+    params.minMarkerPerimeterRate = 0.03;
+    params.maxMarkerPerimeterRate = 4.0;
+    params.polygonalApproxAccuracyRate = 0.05;
+    params.minCornerDistanceRate = 10.0;
+    params.minCornerDistanceRate = 10.0;
+    params.minDistanceToBorder = 3;
+    params.cornerRefinementWinSize = 5;
+    params.cornerRefinementMaxIterations = 30;
+    params.cornerRefinementMinAccuracy = 0.1;
+    params.markerBorderBits = 1;
+    params.perspectiveRemovePixelPerCell = 8;
+    params.perspectiveRemoveIgnoredMarginPerCell = 0.13;
+    params.maxErroneousBitsInBorderRate = 0.04;
+}
+
 void read_calibration_params(cv::Mat& cam_mat, cv::Mat& dist_coeffs, const std::string &params_path) {
     cv::FileStorage fs(params_path, cv::FileStorage::READ);
     if (!fs.isOpened()) {
@@ -68,13 +88,12 @@ int main() {
             std::vector<cv::Vec3d> rvecs(nMarkers), tvecs(nMarkers);
 
             for (int i = 0; i < nMarkers; ++i) {
-                solvePnP(objPoints, corners.at(i), cam_mat, dist_coeffs, rvecs[i], tvecs[i]);
+                cv::solvePnP(objPoints, corners.at(i), cam_mat, dist_coeffs, rvecs[i], tvecs[i]);
             }
 
             for (int i = 0; i < 1; ++i) {
                 renderer.render_cube(tvecs[0], rvecs[0]);
             }
-
 
         }
 
@@ -85,25 +104,4 @@ int main() {
     cap.release();
 
     return 0;
-}
-
-
-static void setup_detector_params(cv::aruco::DetectorParameters &params) {
-    params.adaptiveThreshWinSizeMin = 18;
-    params.adaptiveThreshWinSizeMax = 25;
-    params.adaptiveThreshWinSizeStep = 1;
-    params.adaptiveThreshConstant = 7;
-    params.minMarkerPerimeterRate = 0.03;
-    params.maxMarkerPerimeterRate = 4.0;
-    params.polygonalApproxAccuracyRate = 0.05;
-    params.minCornerDistanceRate = 10.0;
-    params.minCornerDistanceRate = 10.0;
-    params.minDistanceToBorder = 3;
-    params.cornerRefinementWinSize = 5;
-    params.cornerRefinementMaxIterations = 30;
-    params.cornerRefinementMinAccuracy = 0.1;
-    params.markerBorderBits = 1;
-    params.perspectiveRemovePixelPerCell = 8;
-    params.perspectiveRemoveIgnoredMarginPerCell = 0.13;
-    params.maxErroneousBitsInBorderRate = 0.04;
 }
