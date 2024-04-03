@@ -25,7 +25,7 @@ const char* cube_fragment_shader_path = "../lab5/shaders/cube_fragment.glsl";
 #define PURPLE 1.0f, 0.0f, 1.0f
 #define CYAN 0.0f, 1.0f, 1.0f
 
-const float CUBE_SCALE = 0.3;
+const float CUBE_SCALE = 0.2;
 
 GLfloat quad_vertices[] = {
         -1.0f, -1.0f,  0.0f, 0.0f,
@@ -89,16 +89,10 @@ GLuint cube_indices[] = {
 
 
 void setup_opengl_projection(const cv::Mat& camera_matrix, int width, int height, glm::mat4 &projection_mat,
-                                  double near_plane = 0.1, double far_plane = 100) {
-    auto fx = camera_matrix.at<double>(0, 0);
+                                  double near_plane = 0.1, double far_plane = 999999) {
     auto fy = camera_matrix.at<double>(1, 1);
-    double cx = camera_matrix.at<double>(0, 2);
-    double cy = camera_matrix.at<double>(1, 2);
-
     double aspect_ratio = static_cast<double>(width) / height;
     double fovy = 2.0 * atan(height / (2.0 * fy)) * 180.0 / PI;
-
-    // Construct the projection matrix
     projection_mat = glm::perspective(glm::radians(fovy), aspect_ratio, near_plane, far_plane);
 }
 
@@ -183,6 +177,9 @@ Renderer::Renderer(int width, int height, const cv::Mat &cam_mat) {
 
 
 void Renderer::render_img(const cv::Mat& frame) const {
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
     glClear(GL_COLOR_BUFFER_BIT);
 
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -202,24 +199,39 @@ void Renderer::render_img(const cv::Mat& frame) const {
 void Renderer::render_cube(const cv::Vec<double, 3> &pos, const cv::Vec<double, 3> &rot) {
     std::cout << "Render cube on " << pos << " "<< rot << std::endl;
 
-    auto model = glm::mat4(1.0f);
-//    model[1][1] *= -1;
-//    model[2][2] *= -1;
-    model = glm::translate(model, glm::vec3(pos[0], -pos[1], -pos[2]));
+    auto view_matrix = glm::mat4(1.0f);
 
+    // Convert rotation vector to rotation matrix
+    cv::Mat rotation;
+    cv::Rodrigues(rot, rotation);
 
-    model = glm::rotate(model, static_cast<float>(rot[0]), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::rotate(model, static_cast<float>(rot[1]), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::rotate(model, static_cast<float>(rot[2]), glm::vec3(0.0f, 0.0f, 1.0f));
+    // Transpose rotation matrix for OpenGL compatibility
+    rotation = rotation.t();
 
-    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(CUBE_SCALE));
+    // Combine rotation and translation into view matrix
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            view_matrix[i][j] = (float)rotation.at<double>(i, j);
+        }
+//        view_matrix[3][i] = (float)pos[i];
+    }
 
-    glm::mat4 transform_mat = model * scale;
-//    transform_mat = glm::inverse(transform_mat);
+    view_matrix = glm::translate(view_matrix, glm::vec3(-(float)pos[0],
+                                                               -(float)pos[1],
+                                                               -(float)pos[2]));
+
+    // Apply scale
+    view_matrix = glm::scale(view_matrix, glm::vec3(CUBE_SCALE, CUBE_SCALE, CUBE_SCALE));
+
+    // Apply coordinate system conversion (if needed)
+    glm::mat4 cv2glm(1);
+    view_matrix[1][1] *= -1;
+    view_matrix[2][2] *= -1;
+    view_matrix *= cv2glm;
 
     glUseProgram(cube_shader);
     glUniformMatrix4fv(glGetUniformLocation(cube_shader, "projection_matrix"), 1, GL_FALSE, glm::value_ptr(projection_mat));
-    glUniformMatrix4fv(glGetUniformLocation(cube_shader, "view_matrix"), 1, GL_FALSE, glm::value_ptr(transform_mat));
+    glUniformMatrix4fv(glGetUniformLocation(cube_shader, "view_matrix"), 1, GL_FALSE, glm::value_ptr(view_matrix));
     glBindVertexArray(cube_vao_id);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 }
