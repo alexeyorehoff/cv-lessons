@@ -25,7 +25,7 @@ const char* cube_fragment_shader_path = "../lab5/shaders/cube_fragment.glsl";
 #define PURPLE 1.0f, 0.0f, 1.0f
 #define CYAN 0.0f, 1.0f, 1.0f
 
-const float CUBE_SCALE = 0.2;
+const float CUBE_SCALE = 0.2f;
 
 GLfloat quad_vertices[] = {
         -1.0f, -1.0f,  0.0f, 0.0f,
@@ -42,40 +42,40 @@ GLuint quad_indices[] = {
 
 GLfloat cube_vertices[] = {
         // Front face
-        -0.5f, -0.5f, 0.5f,   RED,  // Bottom-left
-        0.5f, -0.5f, 0.5f,   RED,  // Bottom-right
-        0.5f,  0.5f, 0.5f,   RED,  // Top-right
-        -0.5f,  0.5f, 0.5f,   RED,  // Top-left
+        -CUBE_SCALE, -CUBE_SCALE, CUBE_SCALE,   RED,  // Bottom-left
+        CUBE_SCALE, -CUBE_SCALE, CUBE_SCALE,   RED,  // Bottom-right
+        CUBE_SCALE,  CUBE_SCALE, CUBE_SCALE,   RED,  // Top-right
+        -CUBE_SCALE,  CUBE_SCALE, CUBE_SCALE,   RED,  // Top-left
 
         // Back face
-        -0.5f, -0.5f, -0.5f,  GREEN,  // Bottom-left
-        0.5f, -0.5f, -0.5f,  GREEN,  // Bottom-right
-        0.5f,  0.5f, -0.5f,  GREEN,  // Top-right
-        -0.5f,  0.5f, -0.5f,  GREEN,  // Top-left
+        -CUBE_SCALE, -CUBE_SCALE, -CUBE_SCALE,  GREEN,  // Bottom-left
+        CUBE_SCALE, -CUBE_SCALE, -CUBE_SCALE,  GREEN,  // Bottom-right
+        CUBE_SCALE,  CUBE_SCALE, -CUBE_SCALE,  GREEN,  // Top-right
+        -CUBE_SCALE,  CUBE_SCALE, -CUBE_SCALE,  GREEN,  // Top-left
 
         // Top face
-        -0.5f,  0.5f, -0.5f,  BLUE,  // Front-left
-        0.5f,  0.5f, -0.5f,  BLUE,  // Front-right
-        0.5f,  0.5f,  0.5f,  BLUE,  // Back-right
-        -0.5f,  0.5f,  0.5f,  BLUE,  // Back-left
+        -CUBE_SCALE,  CUBE_SCALE, -CUBE_SCALE,  BLUE,  // Front-left
+        CUBE_SCALE,  CUBE_SCALE, -CUBE_SCALE,  BLUE,  // Front-right
+        CUBE_SCALE,  CUBE_SCALE,  CUBE_SCALE,  BLUE,  // Back-right
+        -CUBE_SCALE,  CUBE_SCALE,  CUBE_SCALE,  BLUE,  // Back-left
 
         // Bottom face
-        -0.5f, -0.5f, -0.5f,  YELLOW,  // Front-left
-        0.5f, -0.5f, -0.5f,  YELLOW,  // Front-right
-        0.5f, -0.5f,  0.5f,  YELLOW,  // Back-right
-        -0.5f, -0.5f,  0.5f,  YELLOW,  // Back-left
+        -CUBE_SCALE, -CUBE_SCALE, -CUBE_SCALE,  YELLOW,  // Front-left
+        CUBE_SCALE, -CUBE_SCALE, -CUBE_SCALE,  YELLOW,  // Front-right
+        CUBE_SCALE, -CUBE_SCALE,  CUBE_SCALE,  YELLOW,  // Back-right
+        -CUBE_SCALE, -CUBE_SCALE,  CUBE_SCALE,  YELLOW,  // Back-left
 
         // Right face
-        0.5f, -0.5f, -0.5f,  PURPLE,  // Front-bottom
-        0.5f,  0.5f, -0.5f,  PURPLE,  // Front-top
-        0.5f,  0.5f,  0.5f,  PURPLE,  // Back-top
-        0.5f, -0.5f,  0.5f,  PURPLE,  // Back-bottom
+        CUBE_SCALE, -CUBE_SCALE, -CUBE_SCALE,  PURPLE,  // Front-bottom
+        CUBE_SCALE,  CUBE_SCALE, -CUBE_SCALE,  PURPLE,  // Front-top
+        CUBE_SCALE,  CUBE_SCALE,  CUBE_SCALE,  PURPLE,  // Back-top
+        CUBE_SCALE, -CUBE_SCALE,  CUBE_SCALE,  PURPLE,  // Back-bottom
 
         // Left face
-        -0.5f, -0.5f, -0.5f,  CYAN,  // Front-bottom
-        -0.5f,  0.5f, -0.5f,  CYAN,  // Front-top
-        -0.5f,  0.5f,  0.5f,  CYAN,  // Back-top
-        -0.5f, -0.5f,  0.5f,  CYAN   // Back-bottom
+        -CUBE_SCALE, -CUBE_SCALE, -CUBE_SCALE,  CYAN,  // Front-bottom
+        -CUBE_SCALE,  CUBE_SCALE, -CUBE_SCALE,  CYAN,  // Front-top
+        -CUBE_SCALE,  CUBE_SCALE,  CUBE_SCALE,  CYAN,  // Back-top
+        -CUBE_SCALE, -CUBE_SCALE,  CUBE_SCALE,  CYAN   // Back-bottom
 };
 
 GLuint cube_indices[] = {
@@ -98,20 +98,25 @@ glm::mat4 setup_opengl_projection(const cv::Mat& camera_matrix, int width, int h
 
 cv::Mat RTtoOpenGL(const cv::Vec3d& rotationVector, const cv::Vec3d& translationVector) {
     cv::Mat rotationMatrix;
-    cv::Rodrigues(rotationVector, rotationMatrix);
+    cv::Rodrigues(rotationVector * -1, rotationMatrix);
 
     cv::Mat transformationMatrix = cv::Mat::eye(4, 4, CV_32F);
 
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
-            transformationMatrix.at<float>(i, j) = (float)rotationMatrix.at<double>(i, j);
+            transformationMatrix.at<float>(i, j) = (float) rotationMatrix.at<double>(i, j);
         }
-        transformationMatrix.at<float>(i, 3) = (float)translationVector[i];
     }
 
-    cv::Mat cvToGl = cv::Mat::eye(4, 4, CV_32F);
-    cvToGl.at<float>(1, 1) *= -1; // Invert the y-axis
-    cvToGl.at<float>(2, 2) *= -1; // invert the z-axis
+    transformationMatrix.at<float>(0, 3) = -(float)translationVector[0];
+    transformationMatrix.at<float>(1, 3) = (float)translationVector[1];
+    transformationMatrix.at<float>(2, 3) = (float)translationVector[2];
+
+    cv::Mat cvToGl = cv::Mat::zeros(4, 4, CV_32F);
+    cvToGl.at<float>(0, 0) = 1;
+    cvToGl.at<float>(1, 1) = -1;
+    cvToGl.at<float>(2, 2) = -1; 
+    cvToGl.at<float>(3, 3) = 1; 
     transformationMatrix = cvToGl * transformationMatrix;
     cv::transpose(transformationMatrix , transformationMatrix);
 
