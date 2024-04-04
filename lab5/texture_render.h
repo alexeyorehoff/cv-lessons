@@ -96,21 +96,18 @@ glm::mat4 setup_opengl_projection(const cv::Mat& camera_matrix, int width, int h
     return glm::perspective(glm::radians(fovy), aspect_ratio, near_plane, far_plane);
 }
 
-cv::Mat RTtoOpenGL(const cv::Vec3d& rotationVector, const cv::Vec3d& translationVector) {
+cv::Mat RTtoOpenGL(const cv::Vec3d& rvec, const cv::Vec3d& tvec) {
+    cv::Vec3d rotationVector = {rvec[2], rvec[1], rvec[0]};
     cv::Mat rotationMatrix;
-    cv::Rodrigues(rotationVector * -1, rotationMatrix);
+    cv::Rodrigues(rotationVector, rotationMatrix);
 
     cv::Mat transformationMatrix = cv::Mat::eye(4, 4, CV_32F);
 
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
-            transformationMatrix.at<float>(i, j) = (float) rotationMatrix.at<double>(i, j);
-        }
-    }
+    rotationMatrix.copyTo(transformationMatrix({0, 0, 3, 3}));
 
-    transformationMatrix.at<float>(0, 3) = -(float)translationVector[0];
-    transformationMatrix.at<float>(1, 3) = (float)translationVector[1];
-    transformationMatrix.at<float>(2, 3) = (float)translationVector[2];
+    transformationMatrix.at<float>(0, 3) = -(float)tvec[0];
+    transformationMatrix.at<float>(1, 3) = (float)tvec[1];
+    transformationMatrix.at<float>(2, 3) = (float)tvec[2];
 
     cv::Mat cvToGl = cv::Mat::zeros(4, 4, CV_32F);
     cvToGl.at<float>(0, 0) = 1;
