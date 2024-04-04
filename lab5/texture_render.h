@@ -25,7 +25,7 @@ const char* cube_fragment_shader_path = "../lab5/shaders/cube_fragment.glsl";
 #define PURPLE 1.0f, 0.0f, 1.0f
 #define CYAN 0.0f, 1.0f, 1.0f
 
-const float CUBE_SCALE = 0.2f;
+const float CUBE_SCALE = 0.05f;
 
 GLfloat quad_vertices[] = {
         -1.0f, -1.0f,  0.0f, 0.0f,
@@ -89,38 +89,31 @@ GLuint cube_indices[] = {
 
 
 glm::mat4 setup_opengl_projection(const cv::Mat& camera_matrix, int width, int height,
-                             double near_plane = 0.1, double far_plane = 999999) {
+                             double near_plane = 0.001, double far_plane = 100) {
     auto fy = camera_matrix.at<double>(1, 1);
-    double aspect_ratio = static_cast<double>(width) / height;
-    double fovy = 2.0 * atan(height / (2.0 * fy)) * 180.0 / PI;
-    return glm::perspective(glm::radians(fovy), aspect_ratio, near_plane, far_plane);
+    double aspect_ratio = (double)width / height;
+    double fovy = 2.0 * atan(height / (2.0 * fy));
+    return glm::perspective(fovy, aspect_ratio, near_plane, far_plane);
 }
 
-cv::Mat RTtoOpenGL(const cv::Vec3d& rvec, const cv::Vec3d& tvec) {
-    cv::Vec3d rotationVector = {rvec[2], rvec[1], rvec[0]};
-    cv::Mat rotationMatrix;
-    cv::Rodrigues(rotationVector, rotationMatrix);
+glm::mat4 rvec2rotmat(const cv::Vec3d& rotation) {
+    cv::Vec3d rvec = {rotation[1], rotation[0], rotation[2]}; // Change order of rotation components
 
-    cv::Mat transformationMatrix = cv::Mat::eye(4, 4, CV_32F);
+    cv::Mat cv_rot_mat;
+    cv::Rodrigues(rvec, cv_rot_mat);
 
-    rotationMatrix.copyTo(transformationMatrix({0, 0, 3, 3}));
+    glm::dmat3 rot_mat(0);
+    memcpy(glm::value_ptr(rot_mat), cv_rot_mat.data, 9 * sizeof(double));
+    glm::mat4 trans_mat = glm::mat4(glm::transpose(rot_mat));
 
-    transformationMatrix.at<float>(0, 3) = -(float)tvec[0];
-    transformationMatrix.at<float>(1, 3) = (float)tvec[1];
-    transformationMatrix.at<float>(2, 3) = (float)tvec[2];
+    // Coordinate system transformation
+    glm::mat4 cv2gl = {1, 0, 0, 0,
+                       0, -1, 0, 0,
+                       0, 0, -1, 0,
+                       0, 0, 0, 1};
 
-    cv::Mat cvToGl = cv::Mat::zeros(4, 4, CV_32F);
-    cvToGl.at<float>(0, 0) = 1;
-    cvToGl.at<float>(1, 1) = -1;
-    cvToGl.at<float>(2, 2) = -1; 
-    cvToGl.at<float>(3, 3) = 1; 
-    transformationMatrix = cvToGl * transformationMatrix;
-    cv::transpose(transformationMatrix , transformationMatrix);
-
-    return transformationMatrix;
+    return cv2gl * trans_mat;
 }
-
-
 
 class Renderer {
 private:
@@ -223,11 +216,14 @@ void Renderer::render_img(const cv::Mat& frame) const {
 void Renderer::render_cube(const cv::Vec3d &pos, const cv::Vec3d &rot) {
     std::cout << "Render cube on " << pos << " "<< rot << std::endl;
 
-    auto view_matrix = RTtoOpenGL(rot, pos);
+    auto view_matrix = rvec2rotmat(rot);
+    glm::vec4 translation = {-pos[0], -pos[1], -pos[2], 1};
+
 
     glUseProgram(cube_shader);
     glUniformMatrix4fv(glGetUniformLocation(cube_shader, "projection_matrix"), 1, GL_FALSE, glm::value_ptr(projection_mat));
-    glUniformMatrix4fv(glGetUniformLocation(cube_shader, "view_matrix"), 1, GL_FALSE, view_matrix.ptr<float>(0));
+    glUniformMatrix4fv(glGetUniformLocation(cube_shader, "rotation_matrix"), 1, GL_FALSE, glm::value_ptr(view_matrix));
+    glUniform4fv(glGetUniformLocation(cube_shader, "translation_vector"), 1, glm::value_ptr(translation));
     glBindVertexArray(cube_vao_id);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 }

@@ -8,7 +8,7 @@
 const int width = 1920;
 const int height = 1080;
 
-const float marker_size = 0.065;
+const float marker_size = 0.05;
 
 const std::string calibration_file_path = "../lab5/calibration.xml";
 
