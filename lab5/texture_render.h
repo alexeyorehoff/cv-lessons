@@ -25,7 +25,7 @@ const char* cube_fragment_shader_path = "../lab5/shaders/cube_fragment.glsl";
 #define PURPLE 1.0f, 0.0f, 1.0f
 #define CYAN 0.0f, 1.0f, 1.0f
 
-const float CUBE_SCALE = 0.05f;
+const float CUBE_SCALE = 0.048f;
 
 GLfloat quad_vertices[] = {
         -1.0f, -1.0f,  0.0f, 0.0f,
@@ -130,14 +130,16 @@ private:
     GLuint texture = 0;
 
     glm::mat4 projection_mat;
+    glm::vec3 rad_dist;
+    glm::vec2 tang_dist;
 
 public:
-    Renderer(int width, int height, const cv::Mat &cam_mat);
+    Renderer(int width, int height, const cv::Mat &cam_mat, const cv::Mat &dist_coeffs);
     void render_img(const cv::Mat& frame) const;
     void render_cube(const cv::Vec<double, 3> &pos, const cv::Vec<double, 3> &rot);
 };
 
-Renderer::Renderer(int width, int height, const cv::Mat &cam_mat) {
+Renderer::Renderer(int width, int height, const cv::Mat &cam_mat, const cv::Mat &dist_coeffs) {
     if (glewInit() != GLEW_OK) {
         std::cerr << "GLEW initialization failed" << std::endl;
         exit(1);
@@ -189,6 +191,8 @@ Renderer::Renderer(int width, int height, const cv::Mat &cam_mat) {
     glEnableVertexAttribArray(1);
 
     projection_mat = setup_opengl_projection(cam_mat, width, height);
+    rad_dist = {dist_coeffs.at<double>(0, 0), dist_coeffs.at<double>(0, 1), dist_coeffs.at<double>(0, 4)};
+    tang_dist = {dist_coeffs.at<double>(0, 2), dist_coeffs.at<double>(0, 3)};
 }
 
 
@@ -224,6 +228,9 @@ void Renderer::render_cube(const cv::Vec3d &pos, const cv::Vec3d &rot) {
     glUniformMatrix4fv(glGetUniformLocation(cube_shader, "projection_matrix"), 1, GL_FALSE, glm::value_ptr(projection_mat));
     glUniformMatrix4fv(glGetUniformLocation(cube_shader, "rotation_matrix"), 1, GL_FALSE, glm::value_ptr(view_matrix));
     glUniform4fv(glGetUniformLocation(cube_shader, "translation_vector"), 1, glm::value_ptr(translation));
+    glUniform3fv(glGetUniformLocation(cube_shader, "rad_dist"), 1, glm::value_ptr(rad_dist));
+    glUniform2fv(glGetUniformLocation(cube_shader, "tang_dist"), 1, glm::value_ptr(tang_dist));
+
     glBindVertexArray(cube_vao_id);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 }

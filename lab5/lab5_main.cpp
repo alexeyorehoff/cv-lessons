@@ -8,7 +8,7 @@
 const int width = 1920;
 const int height = 1080;
 
-const float marker_size = 0.05;
+const float marker_size = 0.048;
 
 const std::string calibration_file_path = "../lab5/calibration.xml";
 
@@ -50,7 +50,7 @@ int main() {
 
     cv::Mat cam_mat, dist_coeffs;
     read_calibration_params(cam_mat, dist_coeffs, calibration_file_path);
-    Renderer renderer(width, height, cam_mat);
+    Renderer renderer(width, height, cam_mat, dist_coeffs);
 
     cv::VideoCapture cap(0);
     if (!cap.isOpened()) {
@@ -87,9 +87,11 @@ int main() {
             int nMarkers = static_cast<int>(corners.size());
             std::vector<cv::Vec3d> rvecs(nMarkers), tvecs(nMarkers);
 
-            for (int i = 0; i < nMarkers; ++i) {
-                cv::solvePnP(objPoints, corners.at(i), cam_mat, dist_coeffs, rvecs[i], tvecs[i]);
-            }
+            cv::aruco::estimatePoseSingleMarkers(corners, marker_size, cam_mat, dist_coeffs, rvecs, tvecs);
+//            for (int i = 0; i < nMarkers; ++i) {
+//
+//                cv::solvePnP(objPoints, corners.at(i), cam_mat, dist_coeffs, rvecs[i], tvecs[i]);
+//            }
 
             for (int i = 0; i < 1; ++i) {
                 renderer.render_cube(tvecs[0], rvecs[0]);
