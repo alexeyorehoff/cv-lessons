@@ -6,14 +6,14 @@ layout(location = 1) in vec3 vertex_color;
 out vec3 color;
 
 uniform mat4 projection_matrix;
-uniform mat4 rotation_matrix;
+uniform mat3 rotation_matrix;
 uniform vec4 translation_vector;
 
 uniform vec3 rad_dist;
 uniform vec3 tang_dist;
 
 void main() {
-    gl_Position = projection_matrix * (rotation_matrix * vec4(vertex_position, 1.0) + translation_vector);
+    gl_Position = projection_matrix * (mat4(rotation_matrix) * vec4(vertex_position, 1.0) + translation_vector);
 
     float x = gl_Position.x;
     float y = gl_Position.y;

@@ -25,7 +25,7 @@ const char* cube_fragment_shader_path = "../lab5/shaders/cube_fragment.glsl";
 #define PURPLE 1.0f, 0.0f, 1.0f
 #define CYAN 0.0f, 1.0f, 1.0f
 
-const float CUBE_SCALE = 0.048f;
+const float CUBE_SCALE = 0.07f;
 
 GLfloat quad_vertices[] = {
         -1.0f, -1.0f,  0.0f, 0.0f,
@@ -33,6 +33,7 @@ GLfloat quad_vertices[] = {
         1.0f,  1.0f,  1.0f, 1.0f,
         -1.0f,  1.0f,  0.0f, 1.0f
 };
+
 
 GLuint quad_indices[] = {
         0, 1, 2,
@@ -42,41 +43,42 @@ GLuint quad_indices[] = {
 
 GLfloat cube_vertices[] = {
         // Front face
-        -CUBE_SCALE, -CUBE_SCALE, CUBE_SCALE,   RED,  // Bottom-left
-        CUBE_SCALE, -CUBE_SCALE, CUBE_SCALE,   RED,  // Bottom-right
+        0.0f, 0.0f, CUBE_SCALE,   RED,  // Bottom-left
+        CUBE_SCALE, 0.0f, CUBE_SCALE,   RED,  // Bottom-right
         CUBE_SCALE,  CUBE_SCALE, CUBE_SCALE,   RED,  // Top-right
-        -CUBE_SCALE,  CUBE_SCALE, CUBE_SCALE,   RED,  // Top-left
+        0.0f,  CUBE_SCALE, CUBE_SCALE,   RED,  // Top-left
 
         // Back face
-        -CUBE_SCALE, -CUBE_SCALE, -CUBE_SCALE,  GREEN,  // Bottom-left
-        CUBE_SCALE, -CUBE_SCALE, -CUBE_SCALE,  GREEN,  // Bottom-right
-        CUBE_SCALE,  CUBE_SCALE, -CUBE_SCALE,  GREEN,  // Top-right
-        -CUBE_SCALE,  CUBE_SCALE, -CUBE_SCALE,  GREEN,  // Top-left
+        0.0f, 0.0f, 0.0f,  GREEN,  // Bottom-left
+        CUBE_SCALE, 0.0f, 0.0f,  GREEN,  // Bottom-right
+        CUBE_SCALE,  CUBE_SCALE, 0.0f,  GREEN,  // Top-right
+        0.0f,  CUBE_SCALE, 0.0f,  GREEN,  // Top-left
 
         // Top face
-        -CUBE_SCALE,  CUBE_SCALE, -CUBE_SCALE,  BLUE,  // Front-left
-        CUBE_SCALE,  CUBE_SCALE, -CUBE_SCALE,  BLUE,  // Front-right
-        CUBE_SCALE,  CUBE_SCALE,  CUBE_SCALE,  BLUE,  // Back-right
-        -CUBE_SCALE,  CUBE_SCALE,  CUBE_SCALE,  BLUE,  // Back-left
+        0.0f,  CUBE_SCALE, 0.0f,  BLUE,  // Front-left
+        CUBE_SCALE,  CUBE_SCALE, 0.0f,  BLUE,  // Front-right
+        CUBE_SCALE,  CUBE_SCALE, CUBE_SCALE,  BLUE,  // Back-right
+        0.0f,  CUBE_SCALE, CUBE_SCALE,  BLUE,  // Back-left
 
         // Bottom face
-        -CUBE_SCALE, -CUBE_SCALE, -CUBE_SCALE,  YELLOW,  // Front-left
-        CUBE_SCALE, -CUBE_SCALE, -CUBE_SCALE,  YELLOW,  // Front-right
-        CUBE_SCALE, -CUBE_SCALE,  CUBE_SCALE,  YELLOW,  // Back-right
-        -CUBE_SCALE, -CUBE_SCALE,  CUBE_SCALE,  YELLOW,  // Back-left
+        0.0f, 0.0f, 0.0f,  YELLOW,  // Front-left
+        CUBE_SCALE, 0.0f, 0.0f,  YELLOW,  // Front-right
+        CUBE_SCALE, 0.0f, CUBE_SCALE,  YELLOW,  // Back-right
+        0.0f, 0.0f, CUBE_SCALE,  YELLOW,  // Back-left
 
         // Right face
-        CUBE_SCALE, -CUBE_SCALE, -CUBE_SCALE,  PURPLE,  // Front-bottom
-        CUBE_SCALE,  CUBE_SCALE, -CUBE_SCALE,  PURPLE,  // Front-top
-        CUBE_SCALE,  CUBE_SCALE,  CUBE_SCALE,  PURPLE,  // Back-top
-        CUBE_SCALE, -CUBE_SCALE,  CUBE_SCALE,  PURPLE,  // Back-bottom
+        CUBE_SCALE, 0.0f, 0.0f,  PURPLE,  // Front-bottom
+        CUBE_SCALE,  CUBE_SCALE, 0.0f,  PURPLE,  // Front-top
+        CUBE_SCALE,  CUBE_SCALE, CUBE_SCALE,  PURPLE,  // Back-top
+        CUBE_SCALE, 0.0f, CUBE_SCALE,  PURPLE,  // Back-bottom
 
         // Left face
-        -CUBE_SCALE, -CUBE_SCALE, -CUBE_SCALE,  CYAN,  // Front-bottom
-        -CUBE_SCALE,  CUBE_SCALE, -CUBE_SCALE,  CYAN,  // Front-top
-        -CUBE_SCALE,  CUBE_SCALE,  CUBE_SCALE,  CYAN,  // Back-top
-        -CUBE_SCALE, -CUBE_SCALE,  CUBE_SCALE,  CYAN   // Back-bottom
+        0.0f, 0.0f, 0.0f,  CYAN,  // Front-bottom
+        0.0f,  CUBE_SCALE, 0.0f,  CYAN,  // Front-top
+        0.0f,  CUBE_SCALE, CUBE_SCALE,  CYAN,  // Back-top
+        0.0f, 0.0f, CUBE_SCALE,  CYAN   // Back-bottom
 };
+
 
 GLuint cube_indices[] = {
         0, 1, 2,  0, 2, 3,   // Front face
@@ -89,31 +91,29 @@ GLuint cube_indices[] = {
 
 
 glm::mat4 setup_opengl_projection(const cv::Mat& camera_matrix, int width, int height,
-                             double near_plane = 0.001, double far_plane = 100) {
+                             double near_plane = 0.01, double far_plane = 10) {
+    auto fx = camera_matrix.at<double>(0, 0);
     auto fy = camera_matrix.at<double>(1, 1);
-    double aspect_ratio = (double)width / height;
-    double fovy = 2.0 * atan(height / (2.0 * fy));
-    return glm::perspective(fovy, aspect_ratio, near_plane, far_plane);
+    auto cx = camera_matrix.at<double>(0, 2);
+
+    double fovy = 2.0 * atan(height / 2.0 / fy);
+    double aspect_ratio = (width * fy) / (height * fx) * cx / fx;
+
+    return glm::perspective(fovy, aspect_ratio, near_plane, far_plane);;
 }
 
-glm::mat4 rvec2rotmat(const cv::Vec3d& rotation) {
-    cv::Vec3d rvec = {rotation[1], rotation[0], rotation[2]}; // Change order of rotation components
 
+glm::mat3 rvec2rotmat(const cv::Vec3d& rotation) {
     cv::Mat cv_rot_mat;
-    cv::Rodrigues(rvec, cv_rot_mat);
+    cv::Rodrigues(rotation, cv_rot_mat);
 
     glm::dmat3 rot_mat(0);
     memcpy(glm::value_ptr(rot_mat), cv_rot_mat.data, 9 * sizeof(double));
-    glm::mat4 trans_mat = glm::mat4(glm::transpose(rot_mat));
+    rot_mat = glm::transpose(rot_mat);
 
-    // Coordinate system transformation
-    glm::mat4 cv2gl = {1, 0, 0, 0,
-                       0, -1, 0, 0,
-                       0, 0, -1, 0,
-                       0, 0, 0, 1};
-
-    return cv2gl * trans_mat;
+    return rot_mat;
 }
+
 
 class Renderer {
 private:
@@ -138,6 +138,7 @@ public:
     void render_img(const cv::Mat& frame) const;
     void render_cube(const cv::Vec<double, 3> &pos, const cv::Vec<double, 3> &rot);
 };
+
 
 Renderer::Renderer(int width, int height, const cv::Mat &cam_mat, const cv::Mat &dist_coeffs) {
     if (glewInit() != GLEW_OK) {
@@ -196,11 +197,7 @@ Renderer::Renderer(int width, int height, const cv::Mat &cam_mat, const cv::Mat 
 }
 
 
-
 void Renderer::render_img(const cv::Mat& frame) const {
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
     glClear(GL_COLOR_BUFFER_BIT);
 
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -211,11 +208,9 @@ void Renderer::render_img(const cv::Mat& frame) const {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-
     glBindTexture(GL_TEXTURE_2D, 0);
-    glBindVertexArray(0);
-    glUseProgram(0);
 }
+
 
 void Renderer::render_cube(const cv::Vec3d &pos, const cv::Vec3d &rot) {
     std::cout << "Render cube on " << pos << " "<< rot << std::endl;
@@ -223,10 +218,9 @@ void Renderer::render_cube(const cv::Vec3d &pos, const cv::Vec3d &rot) {
     auto view_matrix = rvec2rotmat(rot);
     glm::vec4 translation = {-pos[0], -pos[1], -pos[2], 1};
 
-
     glUseProgram(cube_shader);
     glUniformMatrix4fv(glGetUniformLocation(cube_shader, "projection_matrix"), 1, GL_FALSE, glm::value_ptr(projection_mat));
-    glUniformMatrix4fv(glGetUniformLocation(cube_shader, "rotation_matrix"), 1, GL_FALSE, glm::value_ptr(view_matrix));
+    glUniformMatrix3fv(glGetUniformLocation(cube_shader, "rotation_matrix"), 1, GL_FALSE, glm::value_ptr(view_matrix));
     glUniform4fv(glGetUniformLocation(cube_shader, "translation_vector"), 1, glm::value_ptr(translation));
     glUniform3fv(glGetUniformLocation(cube_shader, "rad_dist"), 1, glm::value_ptr(rad_dist));
     glUniform2fv(glGetUniformLocation(cube_shader, "tang_dist"), 1, glm::value_ptr(tang_dist));
