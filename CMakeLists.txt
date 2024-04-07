@@ -40,3 +40,7 @@ target_link_libraries(lab4 ${OpenCV_LIBS})
 
 add_executable(lab5 lab5/lab5_main.cpp lab5/texture_render.h lab5/shader.h lab5/window.h)
 target_link_libraries(lab5 ${OpenCV_LIBS} glm::glm opengl32.lib GLEW::GLEW glfw)
+
+add_executable(lab6 lab6/lab6_main.cpp)
+target_link_libraries(lab6 ${OpenCV_LIBS})
+
