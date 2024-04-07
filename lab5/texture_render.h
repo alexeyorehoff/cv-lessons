@@ -97,7 +97,7 @@ glm::mat4 setup_opengl_projection(const cv::Mat& camera_matrix, int width, int h
     auto cx = camera_matrix.at<double>(0, 2);
 
     double fovy = 2.0 * atan(height / 2.0 / fy);
-    double aspect_ratio = (width * fy) / (height * fx) * cx / fx;
+    double aspect_ratio = (width * fx) / (height * fy) * cx / fx;
 
     return glm::perspective(fovy, aspect_ratio, near_plane, far_plane);;
 }
