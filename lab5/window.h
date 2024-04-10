@@ -72,12 +72,6 @@ Window::Window(GLint width, GLint height, const char *title) {
     glfwSwapInterval(1);
     glfwSetWindowSizeCallback(window, glfw_resize_callback);
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-
-
-//    gluPerspective(fovy, aspect, 0.1, 100);
-
     glViewport(0, 0, width, height);
 }
 
