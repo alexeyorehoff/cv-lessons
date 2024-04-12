@@ -27,7 +27,7 @@ public:
 
     void swap() { glfwSwapBuffers(window); }
 
-    void clear() { glClear(GL_COLOR_BUFFER_BIT); }
+    static void clear() { glClear(GL_COLOR_BUFFER_BIT); }
 
     GLFWwindow* get_window() { return window; }
 

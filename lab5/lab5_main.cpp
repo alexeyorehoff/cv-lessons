@@ -3,7 +3,7 @@
 #include "opencv2/opencv.hpp"
 #include "opencv2/aruco.hpp"
 #include "window.h"
-#include "texture_render.h"
+#include "glrenderer.h"
 
 const int width = 1920;
 const int height = 1080;
@@ -12,19 +12,19 @@ const float marker_size = 0.05;
 
 const std::string calibration_file_path = "../lab5/calibration.xml";
 
-void draw_cube(cv::Mat &frame, cv::Mat &cam_mat, cv::Mat &dist_coffs, cv::Vec3d &rvec, cv::Vec3d &tvec, float length)
-{
-    std::vector<cv::Point3f> cube_vertices = {cv::Point3f(-length / 2, -length / 2, 0),
-                                              cv::Point3f(length / 2, -length / 2, 0),
-                                              cv::Point3f(length / 2, length / 2, 0),
-                                              cv::Point3f(-length / 2, length / 2, 0),
-                                              cv::Point3f(-length / 2, -length / 2, length),
-                                              cv::Point3f(length / 2, -length / 2, length),
-                                              cv::Point3f(length / 2, length / 2, length),
-                                              cv::Point3f(-length / 2, length / 2, length)};
+std::vector<cv::Point3f> cv_cube_vertices = {cv::Point3f(-marker_size / 2, -marker_size / 2, 0),
+                                             cv::Point3f(marker_size / 2, -marker_size / 2, 0),
+                                             cv::Point3f(marker_size / 2, marker_size / 2, 0),
+                                             cv::Point3f(-marker_size / 2, marker_size / 2, 0),
+                                             cv::Point3f(-marker_size / 2, -marker_size / 2, marker_size),
+                                             cv::Point3f(marker_size / 2, -marker_size / 2, marker_size),
+                                             cv::Point3f(marker_size / 2, marker_size / 2, marker_size),
+                                             cv::Point3f(-marker_size / 2, marker_size / 2, marker_size)};
 
+void draw_cube(cv::Mat &frame, cv::Mat &cam_mat, cv::Mat &dist_coffs, cv::Vec3d &rvec, cv::Vec3d &tvec)
+{
     std::vector<cv::Point2f> proj_points;
-    cv::projectPoints(cube_vertices, rvec, tvec, cam_mat, dist_coffs, proj_points);
+    cv::projectPoints(cv_cube_vertices, rvec, tvec, cam_mat, dist_coffs, proj_points);
 
     cv::line(frame, proj_points[0], proj_points[1], {0, 0, 255}, 4);
     cv::line(frame, proj_points[1], proj_points[2], {0, 255, 255}, 4);
@@ -60,7 +60,7 @@ int main() {
     cv::Mat cam_mat, dist_coeffs;
     read_calibration_params(cam_mat, dist_coeffs, calibration_file_path);
 
-    Renderer renderer(width, height, cam_mat, dist_coeffs, marker_size);
+    glRenderer renderer(width, height, cam_mat, dist_coeffs, marker_size);
 
     cv::VideoCapture cap(0);
     if (!cap.isOpened()) {
@@ -69,6 +69,12 @@ int main() {
     }
     cap.set(cv::CAP_PROP_FRAME_WIDTH, width);
     cap.set(cv::CAP_PROP_FRAME_HEIGHT, height);
+
+    cv::Mat objPoints(4, 1, CV_32FC3);
+    objPoints.ptr<cv::Vec3f>(0)[0] = cv::Vec3f(-marker_size / 2.f, marker_size / 2.f, 0);
+    objPoints.ptr<cv::Vec3f>(0)[1] = cv::Vec3f(marker_size / 2.f, marker_size / 2.f, 0);
+    objPoints.ptr<cv::Vec3f>(0)[2] = cv::Vec3f(marker_size / 2.f, -marker_size / 2.f, 0);
+    objPoints.ptr<cv::Vec3f>(0)[3] = cv::Vec3f(-marker_size / 2.f, -marker_size / 2.f, 0);
 
     cv::aruco::DetectorParameters detectorParams = cv::aruco::DetectorParameters();
     cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_5X5_250);
@@ -82,7 +88,7 @@ int main() {
 
         window.clear();
 
-        renderer.render_img(frame);
+        renderer.draw_bg(frame);
 
         std::vector<int> ids;
         std::vector<std::vector<cv::Point2f>> corners, rejected;
@@ -90,13 +96,12 @@ int main() {
 
         if (!ids.empty()) {
             int nMarkers = (int)corners.size();
-            std::vector<cv::Vec3d> rvecs(nMarkers), tvecs(nMarkers);
-
-            cv::aruco::estimatePoseSingleMarkers(corners, marker_size, cam_mat, dist_coeffs, rvecs, tvecs);
+            cv::Vec3d rvec, tvec;
 
             for (int i = 0; i < nMarkers; ++i) {
-                draw_cube(frame, cam_mat, dist_coeffs, rvecs[i], tvecs[i], marker_size);
-                renderer.render_cube(tvecs[0], rvecs[0]);
+                cv::solvePnP(objPoints, corners.at(i), cam_mat, dist_coeffs, rvec, tvec);
+                draw_cube(frame, cam_mat, dist_coeffs, rvec, tvec);
+                renderer.draw_cube(tvec, rvec);
             }
 
         }

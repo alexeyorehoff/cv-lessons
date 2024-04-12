@@ -68,12 +68,11 @@ glm::mat4 setup_opengl_projection(const cv::Mat& camera_matrix, int width, int h
                              double near_plane = 0.01, double far_plane = 100) {
     auto fx = camera_matrix.at<double>(0, 0);
     auto fy = camera_matrix.at<double>(1, 1);
-    auto cx = camera_matrix.at<double>(0, 2);
 
     double fovy = 2.0 * atan(height / 2.0 / fy);
     double aspect_ratio = (width * fx) / (height * fy);
 
-    return glm::perspective(fovy, aspect_ratio, near_plane, far_plane);;
+    return glm::perspective(fovy, aspect_ratio, near_plane, far_plane);
 }
 
 
@@ -95,7 +94,7 @@ glm::mat3 rvec2rotmat(const cv::Vec3d& rotation, float scale) {
 }
 
 
-class Renderer {
+class glRenderer {
 private:
     GLuint vao_id = 0;
     GLuint vbo_id = 0;
@@ -116,13 +115,13 @@ private:
     float cube_scale;
 
 public:
-    Renderer(int width, int height, const cv::Mat &cam_mat, const cv::Mat &dist_coeffs, float cube_scale);
-    void render_img(const cv::Mat& frame) const;
-    void render_cube(const cv::Vec<double, 3> &pos, const cv::Vec<double, 3> &rot);
+    glRenderer(int width, int height, const cv::Mat &cam_mat, const cv::Mat &dist_coeffs, float cube_scale);
+    void draw_bg(const cv::Mat& frame) const;
+    void draw_cube(const cv::Vec3d &pos, const cv::Vec3d &rot);
 };
 
 
-Renderer::Renderer(int width, int height, const cv::Mat &cam_mat, const cv::Mat &dist_coeffs, float cube_scale)
+glRenderer::glRenderer(int width, int height, const cv::Mat &cam_mat, const cv::Mat &dist_coeffs, float cube_scale)
      : cube_scale(cube_scale),
        bg_shader(CreateShader(bg_vertex_shader_path, bg_fragment_shader_path)),
        cube_shader(CreateShader(cube_vertex_shader_path, cube_fragment_shader_path)) {
@@ -180,9 +179,10 @@ Renderer::Renderer(int width, int height, const cv::Mat &cam_mat, const cv::Mat 
 }
 
 
-void Renderer::render_img(const cv::Mat& frame) const {
+void glRenderer::draw_bg(const cv::Mat& frame) const {
     glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame.cols, frame.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, frame.data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame.cols,
+                 frame.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, frame.data);
 
     glUseProgram(bg_shader);
     glBindVertexArray(vao_id);
@@ -193,7 +193,7 @@ void Renderer::render_img(const cv::Mat& frame) const {
 }
 
 
-void Renderer::render_cube(const cv::Vec3d &pos, const cv::Vec3d &rot) {
+void glRenderer::draw_cube(const cv::Vec3d &pos, const cv::Vec3d &rot) {
     std::cout << "Render cube on " << pos << " "<< rot << std::endl;
 
     auto view_matrix = rvec2rotmat(rot, cube_scale);
