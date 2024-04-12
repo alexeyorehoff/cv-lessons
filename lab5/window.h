@@ -27,6 +27,8 @@ public:
 
     void swap() { glfwSwapBuffers(window); }
 
+    void clear() { glClear(GL_COLOR_BUFFER_BIT); }
+
     GLFWwindow* get_window() { return window; }
 
     ~Window() {
@@ -73,6 +75,7 @@ Window::Window(GLint width, GLint height, const char *title) {
     glfwSetWindowSizeCallback(window, glfw_resize_callback);
 
     glViewport(0, 0, width, height);
+    glClearColor(1, 1, 1, 1);
 }
 
 #endif //CV_LESSONS_WINDOW_H
