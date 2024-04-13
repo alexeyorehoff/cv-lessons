@@ -3,12 +3,13 @@
 #include "opencv2/highgui.hpp"
 #include <vector>
 #include <algorithm>
+#include <iostream>
 
 const char* source = "../lab6/videos/2.avi";
 const char* slider_win_name = "thresh_setup";
 
 
-static int low_hue = 120;
+static int low_hue = 230;
 static int high_hue = 255;
 static int low_sat = 150;
 static int high_sat = 255;
@@ -16,9 +17,13 @@ static int low_val = 0;
 static int high_val = 255;
 
 const float fovx = 74;
-const float sensor_w = 7.5;  // Sensor width in mm to calculate focal distance
-const float focal = sensor_w / 2 / tan(fovx / 2 / 180 * CV_PI);  // focal distance
-const float cam_shift = 250;  // Distance from camera axis to laser plane
+const float focal = (float)tan(fovx / 2 / 180 * CV_PI);  // focal distance
+const float cam_shift = 127;           // Distance from camera axis to laser plane
+
+const int grid_width = 1500;           // Window size in mm before scaling
+const int grid_heigth = 2200;
+const float grid_scale_factor = 0.5;   // Scaling. When set to 1, 1px = 1mm
+const int grid_step = 50;              // Step of grid lines in mm
 
 
 cv::Mat preprocess_frame(const cv::Mat &frame) {
@@ -45,18 +50,18 @@ cv::Mat preprocess_frame(const cv::Mat &frame) {
 
 
 std::vector<cv::Point3f> frame2points(cv::Mat frame) {
-    cv::Mat nonzero;
-    cv::findNonZero(frame, nonzero);
+    cv::Mat flipped, nonzero;
+    cv::flip(frame, flipped, 0);
+    cv::findNonZero(flipped({0, 0, frame.cols, frame.rows / 2}), nonzero);
     std::vector<cv::Point3f> res;
-    float pixel_size = sensor_w / (float)frame.cols;
     float center_x = (float)frame.cols / 2.0f;
     float center_y = (float)frame.rows / 2.0f;
 
     for (int idx = 0; idx < nonzero.total(); idx++) {
         cv::Point point = nonzero.at<cv::Point>(idx);
 
-        float dx = ((float)point.x - center_x) * pixel_size;
-        float dy = (center_y - (float)point.y) * pixel_size;
+        float dx = ((float)point.x - center_x) / (float)frame.rows;
+        float dy = (center_y - (float)point.y) / (float)frame.cols;
 
         float depth = cam_shift / dy * focal;
         float x = dx / dy * cam_shift;
@@ -66,8 +71,7 @@ std::vector<cv::Point3f> frame2points(cv::Mat frame) {
 }
 
 
-cv::Mat displayDotsOnGrid(std::vector<cv::Point3f> points, float offset, int gridStep) {
-    // Find min and max X and Z values
+cv::Mat draw_points(std::vector<cv::Point3f> points) {
     float minX = std::numeric_limits<float>::max();
     float maxX = std::numeric_limits<float>::min();
     float minZ = std::numeric_limits<float>::max();
@@ -80,25 +84,30 @@ cv::Mat displayDotsOnGrid(std::vector<cv::Point3f> points, float offset, int gri
         maxZ = std::max(maxZ, point.z);
     }
 
-    // Create a grid
-    int width = maxX - minX;
-    int height = maxZ - minZ;
-    cv::Mat grid(height, width, CV_8UC3, cv::Scalar(255, 255, 255));
+    std::cout << "\nx values - " << minX << " - " << maxX << "\n" << "z values - " << minZ << " - " << maxZ << "\n";
 
-    for (int i = 0; i <= width; i += gridStep) {
-        cv::line(grid, cv::Point(i, 0), cv::Point(i, height), cv::Scalar(200, 200, 200), 1);
+    int s_width = int(grid_width * grid_scale_factor);  // Scaled values
+    int s_height = int(grid_heigth * grid_scale_factor);
+    int s_step = int(grid_step * grid_scale_factor);
+
+    cv::Mat grid(s_height, s_width, CV_8UC3, cv::Scalar(255, 255, 255));
+
+    for (int i = s_width / 2; i <= s_width; i += s_step) {
+        cv::line(grid, {i, 0}, {i, s_height}, {200, 200, 200}, 1);
     }
-    for (int i = 0; i <= height; i += gridStep) {
-        cv::line(grid, cv::Point(0, i), cv::Point(width, i), cv::Scalar(200, 200, 200), 1);
+    for (int i = s_width / 2; i >= 0; i -= s_step) {
+        cv::line(grid, {i, 0}, {i, s_height}, {200, 200, 200}, 1);
+    }
+    for (int i = s_height; i >= 0 ; i -= s_step) {
+        cv::line(grid, {0, i}, {s_width, i}, {200, 200, 200}, 1);
     }
 
-    // Draw points on the grid
-    for (const auto& point : points) {
-        int x = (int)point.x / gridStep;
-        int z = (int)point.z / gridStep;
-        if (x >= 0 && x < width && z >= 0 && z < height) {
-            grid.at<cv::Vec3b>(z, x) = cv::Vec3b(0, 0, 255); // Draw point in blue color
-        }
+    cv::line(grid, {0, s_height - s_step}, {s_width, s_height - s_step}, {0, 0, 200}, 1);
+    cv::line(grid, {s_width / 2, 0}, {s_width / 2, s_height}, {0, 0, 200}, 1);
+
+    for (auto &point: points) {
+        cv::circle(grid, {int(point.x * grid_scale_factor) + s_width / 2 ,
+                                      s_height - int(point.z * grid_scale_factor) - s_step}, 2, {0, 0, 255});
     }
 
     return grid;
@@ -119,22 +128,22 @@ int main() {
 
     cap.read(frame);
 
-
     while (true) {
         if (!cap.read(frame)) {
             cap.set(cv::CAP_PROP_POS_FRAMES, 0);
             continue;
         }
+//        frame = cv::imread("../lab6/videos/calib_1_0.jpg");  // Calibration image
 
         cv::Mat preprocessed = preprocess_frame(frame);
         auto points = frame2points(preprocessed);
-        auto res = displayDotsOnGrid(points, 10, 15);
+        auto res = draw_points(points);
 
+        cv::flip(preprocessed, preprocessed, 0);
         cv::imshow("res", res);
-
-
         cv::imshow("original", frame);
         cv::imshow("line view",preprocessed);
+
         if (cv::waitKey(50) == 27) break;
     }
     cv::destroyAllWindows();
