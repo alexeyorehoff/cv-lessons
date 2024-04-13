@@ -72,19 +72,19 @@ std::vector<cv::Point3f> frame2points(cv::Mat frame) {
 
 
 cv::Mat draw_points(std::vector<cv::Point3f> points) {
-    float minX = std::numeric_limits<float>::max();
-    float maxX = std::numeric_limits<float>::min();
-    float minZ = std::numeric_limits<float>::max();
-    float maxZ = std::numeric_limits<float>::min();
-
-    for (const auto& point : points) {
-        minX = std::min(minX, point.x);
-        maxX = std::max(maxX, point.x);
-        minZ = std::min(minZ, point.z);
-        maxZ = std::max(maxZ, point.z);
-    }
-
-    std::cout << "\nx values - " << minX << " - " << maxX << "\n" << "z values - " << minZ << " - " << maxZ << "\n";
+//    float minX = std::numeric_limits<float>::max();
+//    float maxX = std::numeric_limits<float>::min();
+//    float minZ = std::numeric_limits<float>::max();
+//    float maxZ = std::numeric_limits<float>::min();
+//
+//    for (const auto& point : points) {
+//        minX = std::min(minX, point.x);
+//        maxX = std::max(maxX, point.x);
+//        minZ = std::min(minZ, point.z);
+//        maxZ = std::max(maxZ, point.z);
+//    }
+//
+//    std::cout << "\nx values - " << minX << " - " << maxX << "\n" << "z values - " << minZ << " - " << maxZ << "\n";
 
     int s_width = int(grid_width * grid_scale_factor);  // Scaled values
     int s_height = int(grid_heigth * grid_scale_factor);
@@ -133,13 +133,12 @@ int main() {
             cap.set(cv::CAP_PROP_POS_FRAMES, 0);
             continue;
         }
-//        frame = cv::imread("../lab6/videos/calib_1_0.jpg");  // Calibration image
+//        frame = cv::imread("../lab6/videos/calib_1_0.jpg");  //Calibration
 
         cv::Mat preprocessed = preprocess_frame(frame);
         auto points = frame2points(preprocessed);
         auto res = draw_points(points);
 
-        cv::flip(preprocessed, preprocessed, 0);
         cv::imshow("res", res);
         cv::imshow("original", frame);
         cv::imshow("line view",preprocessed);
