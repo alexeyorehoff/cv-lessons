@@ -29,6 +29,7 @@ const int grid_step = 50;              // Step of grid lines in mm
 cv::Mat preprocess_frame(const cv::Mat &frame) {
     // Processes frame from camera to get 1px thick line
     cv::Mat res = frame.clone();
+    cv::cvtColor(res, res, cv::COLOR_BGR2HSV);
     cv::inRange(frame, cv::Scalar(low_hue, low_sat, low_val),
                 cv::Scalar(high_hue, high_sat, high_val), res);
 
@@ -133,7 +134,7 @@ int main() {
             cap.set(cv::CAP_PROP_POS_FRAMES, 0);
             continue;
         }
-//        frame = cv::imread("../lab6/videos/calib_1_0.jpg");  //Calibration
+        frame = cv::imread("../lab6/videos/calib_1_0.jpg");  //Calibration
 
         cv::Mat preprocessed = preprocess_frame(frame);
         auto points = frame2points(preprocessed);
